@@ -1,0 +1,15 @@
+---
+title: "Problem Sheet 1"
+output: pdf_document
+date: "2024-10-08"
+---
+## Task 1 
+Hypothesis: If you are older you are more likely to read a greater number of books per month.
+```{r}
+setwd("/Users/carlaleone/Desktop/Exeter/Problem Sheet")
+library(readr)
+data <- read_csv("BIOM4025_data_2024.csv")
+View(data)
+```
+
+## Task 2
