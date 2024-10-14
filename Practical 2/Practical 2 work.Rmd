@@ -35,6 +35,164 @@ summary(cry.data$sex)
 ```
 
 ### 3 Descriptive Statistics
+```{r}
+nrow(cry.data)
+```
+Calculate the mean , variance, standard deviation of child age:
+```{r}
+mean(cry.data$child.age)/365
+
+var(cry.data$child.age)
+sd(cry.data$child.age)
+min(cry.data$child.age)
+max(cry.data$child.age)
+```
+
+# Excercise 2.2
+Confirm that the standard deviation is equal to the square-root of the variance.
+```{r}
+sqrt(var(cry.data$child.age))
+# is the same as st dev
+```
+
+Calculate the st error of the mean
+```{r}
+sd(cry.data$child.age)/sqrt(length(cry.data$child.age))
+```
+
+# Excercise 2.3
+Compare your estimates to those reported by the authors in Section 2a. Are they the same?
+
+# Excercise 2.4
+Write your own function to calculate the variance
+```{r}
+?var()
+variance_calc <- function(a) {
+  mean.col<- mean(a)
+  sum.squares<- sum((a-(mean.col))^2)
+  denom<- length(a) - 1
+  sum.squares/denom
+}
+
+variance_calc(cry.data$child.age)
+
+```
+
+Often we want to calculate a mean and standard error for a subset of our data. For example, what is the mean F0 of male and female babies? We can do this by selecting only the rows for boys or girls. 
+```{r}
+mean(cry.data$baby.f0[cry.data$sex=="m"])
+```
+
+# Excercise 2.5
+Calculate the mean and standard error for F0 of female children, and compare this to the values reported in Table 1.
+```{r}
+mean(cry.data$baby.f0[cry.data$sex=="f"])
+
+sd.f0.f<- sd(cry.data$baby.f0[cry.data$sex=="f"])
+sd.f0.f/sqrt(length(cry.data$baby.f0[cry.data$sex=="f"]))
+
+```
+
+### 4 Probabilities
+Let’s have a closer look at the variation in F0 among children: To visualise this variation, we can plot a histogram:
+```{r}
+hist(cry.data$child.f0)
+```
+Calculate the probability that a (randomly selected) child has an f0 of at least 300 Hz. To this end we calculate the difference between 300 Hz and the population mean, and express this difference in standard deviations:
+```{r}
+d <- (300-mean(cry.data$child.f0))/sd(cry.data$child.f0) 
+d
+```
+So in other words, a child with a pitch of 300 Hz has a pitch that is 1.32 standard deviations higher than that of the of the ‘average’ child.
+
+What is the probability of sampling a child that has a pitch that is at least this high? To answer this question, we can use the standard normal distribution and calculate the area under the curve that is located to the right of 1.32.
+
+We can calculate this area using the pnorm() function, but because this function by default gives us the area
+to the left of 1.32, we have to do:
+```{r}
+1-pnorm(d)
+```
+In other words, the probability that the voice of a randomly selected child has a pitch that is at least 300 Hz is 0.0928228.
+
+# Excercise 2.6
+What is the probability that a randomly selected child has a voice with a pitch between 250 and 300 Hz?
+```{r}
+p <- (250-mean(cry.data$child.f0))/sd(cry.data$child.f0) 
+p
+(1-pnorm(p)) - (1-pnorm(d))
+
+```
+pnorm() provides you with the area under the curve of a standard normal distribution that is to the left of a certain value of x (measured in standard deviations). Furthermore, there is dnorm() which provides you with the probability density for a given value of x. This function allows you to plot curves such as those above. Finally, there is qnorm(), which does the opposite of pnorm() in that it allows you to specify the area under the curve (i.e. a probability) and it will return the value of x that goes with this.
 
 
+Similar functions exist for other distributions, including the t distribution (dt(), pt(), qt() and rt()) and the F -distribution (df(), pf(), etc.).
+
+# Excercise 2.7
+Calculate the range of f0 that is expected to contain the f0 of 75% of all children.
+```{r}
+?pnorm()
+
+```
+
+
+### 5 Differences between boys and girls, and between babies and children
+Although there are obvious differences in the pitch of male and female voices at adulthood, do these differences already exist in babies and children? To test if there is a significant difference between male and female babies, we can use t.test() to perform a two-sample t-test:
+```{r}
+t.test(cry.data$baby.f0 ~ cry.data$sex, var.equal=TRUE)
+```
+Result is not significant for crying pitch between males and females. 
+
+# Excercise 2.8 
+Above we have made the assumption that the variances in both groups are equal (var.equal=TRUE). Is this assumption justified? If we don’t want to make this assumption, we can specify var.equal=FALSE instead. How does this alter our results?
+```{r}
+t.test(cry.data$baby.f0 ~ cry.data$sex, var.equal=FALSE)
+```
+
+Alternatively, we could have tested for a difference in pitch between male and female babies using an analysis of variance (ANOVA) using aov().
+```{r}
+my.anova <- aov(cry.data$baby.f0 ~ cry.data$sex) 
+summary(my.anova)
+```
+# Excercise 2.9
+Compare the output from this ANOVA to the output from the t-test. What are the similarities? And what are the differences?
+
+
+But what if we want to compare the voice pitch of babies and children, which are in two different columns?
+```{r}
+t.test(cry.data$baby.f0, cry.data$child.f0, var.equal = TRUE)
+```
+If we were to report this result in a paper, we could write something like: The mean pitch of babies (438 Hz) is significantly higher than the mean pitch of children at age 5 (268 Hz) (t = 11.7, d.f. = 28, p < 0.001).
+
+This two-sample t-test ignores the fact that baby.f0 and child.f0 were measured for the same individuals. To take advantage of this paired design, we can use a paired t-test instead:
+```{r}
+t.test(cry.data$baby.f0, cry.data$child.f0, paired = TRUE)
+```
+# Excercise 2.9 
+How did the degrees of freedom change compared to the two-sample t-test? Why?
+The degrees of freedom halved. This would likely be because the first t test was assuming that each measurement was one sample, but instead each sample was one child. Since there were two measurements per child, we halved the first t test degrees of freedom for the paired t test.
+
+### 6 Is there a relationship between pitch of babies and children
+Having established that there is no significant difference in pitch between baby boys and girls, but a highly significant difference between babies and children, we are ready to tackle our main question: Does pitch as a baby predict pitch as a child?
+
+To test if baby.f0 and child.f0 are correlated, we can use cor.test():
+```{r}
+cor.test(cry.data$baby.f0, cry.data$child.f0)
+```
+Although this tells us that there is an association between baby.f0 and child.f0, we would also like to know how exactly child.f0 depends on baby.f0. To this end, we can regress child.f0 (the dependent, or y variable) against baby.f0
+```{r}
+my.regression <- lm(child.f0 ~ baby.f0, data=cry.data) 
+summary(my.regression)
+```
+# Excercise 2.11
+How much of the variation child.f0 is explained by variation in baby.f0? How does this number compare to that reported by the authors?
+
+# Excercise 2.12
+Rather than using cor.test() and lm(), use var() and cov() to calculate the correlation coefficient and slope.
+```{r}
+covariance<- cov(cry.data$child.f0, cry.data$baby.f0)
+variance.child<- var(cry.data$child.f0)
+variance.baby<- var(cry.data$baby.f0)
+r<- covariance/sqrt((variance.child^2)*(variance.baby)^2)
+r
+```
 
