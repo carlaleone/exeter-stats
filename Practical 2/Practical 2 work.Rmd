@@ -1,0 +1,40 @@
+---
+title: "Practical 2 worksheet"
+output: pdf_document
+date: "2024-10-14"
+---
+### 2 Getting Started
+## 2.1 Importing Data
+```{r}
+getwd()
+setwd("/Users/carlaleone/Desktop/Exeter/Practical 2")
+library(readxl)
+cry.data<- read_excel("rsbl20180065_si_001.xlsx")
+View(cry.data)
+# change right hand and left hand names to match the practical
+cry.data$right.ratio <- cry.data$right.hand
+cry.data$left.ratio <- cry.data$left.hand
+cry.data <- subset(cry.data, select = -c(left.hand, right.hand))
+```
+
+Explore the data:
+```{r}
+names(cry.data)
+summary(cry.data)
+summary(cry.data$sex)
+```
+
+# Excercise 2.1
+Sex was originally a number, how would you make it a character?
+```{r}
+cry.data$sex.as.character<- as.character(cry.data$sex)
+#with summary () just gives the length, class, and mode of the column
+cry.data$sex<- as.factor(cry.data$sex)
+summary(cry.data$sex)
+# summary gives number of males and females
+```
+
+### 3 Descriptive Statistics
+
+
+
