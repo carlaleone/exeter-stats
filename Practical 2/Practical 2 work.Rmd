@@ -131,7 +131,13 @@ Similar functions exist for other distributions, including the t distribution (d
 Calculate the range of f0 that is expected to contain the f0 of 75% of all children.
 ```{r}
 ?pnorm()
-
+?qnorm()
+mean(cry.data$child.f0)
+sd(cry.data$child.f0)
+qnorm(0.125, mean =267.8667 , sd =24.27776)
+# [1] 239.9388
+qnorm(0.875, mean =267.8667 , sd =24.27776)
+#[1] 295.7946
 ```
 
 
@@ -194,5 +200,68 @@ variance.child<- var(cry.data$child.f0)
 variance.baby<- var(cry.data$baby.f0)
 r<- covariance/sqrt((variance.child^2)*(variance.baby)^2)
 r
+```
+
+### 7 Visualizing Regression
+
+Finally, it would be nice to visualise the relationship between child.f0 and baby.f0.
+```{r}
+plot(child.f0 ~ baby.f0, data=cry.data)
+```
+
+We also want to add a regression line
+```{r}
+plot(child.f0 ~ baby.f0, data=cry.data) 
+abline(my.regression)
+```
+# Excercise 2.13
+Although this figure doesn’t look too bad, it still needs a bit of work to make it ready for publication. Use xlim, ylim, pch, col, xlab and ylab to make it look more like Figure 1.
+```{r}
+# all data limits and colours
+colors <- ifelse(cry.data$sex == "m", "grey", "black")
+x_limits <- range(cry.data$baby.f0)  
+y_limits <- range(cry.data$child.f0)  
+
+#total limits
+predicted_y <- predict(my.regression, 
+                       newdata = data.frame(baby.f0 = x_limits))
+
+# male and female regressions for separate lines
+cry.data.m<- subset(cry.data, sex == "m")
+cry.data.f<- subset(cry.data, sex == "f")
+
+regression.m<- lm(child.f0 ~ baby.f0, data=cry.data.m) 
+regression.f<- lm(child.f0 ~ baby.f0, data=cry.data.f)
+
+#male limits
+x_limits_m <- range(cry.data.m$baby.f0)  # x limits for male data
+predicted_y_male <- predict(regression.m, newdata = data.frame(baby.f0 = x_limits_m))
+
+
+#female limits
+x_limits_f <- range(cry.data.f$baby.f0)  # x limits for male data
+predicted_y_female <- predict(regression.f, newdata = data.frame(baby.f0 = x_limits_f))
+
+#Plot
+
+plot(child.f0 ~ baby.f0, data=cry.data, 
+xlab= "cry F0
+ (Hz) at age 4 months", 
+ ylab = "speech
+F0 (Hz) at age 5 years", 
+pch =16, 
+col = colors)
+
+lines(x_limits, predicted_y)
+lines(x_limits_m, predicted_y_male,col= "black" , lty = 2)
+lines(x_limits_f, predicted_y_female,col= "grey" , lty = 2)
+
+
+
+
+
+
+abline(my.regression, xlim = range(cry.data$baby.f0), ylim= range(cry.data$child.f0))
+
 ```
 
