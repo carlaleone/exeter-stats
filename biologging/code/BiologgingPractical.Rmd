@@ -239,7 +239,7 @@ Let's start by taking a look at the raw tracking data for these species. We do t
 # If you need to install the libraries, run the following two lines that are commented out 
 
 # options(repos = list(CRAN="http://cran.rstudio.com/"))
-# install.packages(c('ggplot', 'dplyr', 'rnaturalearth'), dependencies = TRUE)
+install.packages(c('ggplot', 'dplyr', 'rnaturalearth'), dependencies = TRUE)
 
 library(ggplot2)
 library(rnaturalearth)
@@ -285,12 +285,18 @@ p2 = ggplot()+
 p2 <- p2 + ggtitle('Raw tracks Crabeater Seals')
 p2 # Outputs the map we just created
 ```
+SE Seals is just ARGOS, CE Seals is GPS and Argos
+In ARGOS there are different ways of classifying location quality. 
+Remember ARGOS gives etter data for animals at the poles.
 
 Based on this map with the raw data answer the following question:
 
 1.  Do the tracks show any gaps in data transmission?
+It looks like there are gaps in the pings especially for Fiona, but it could also be differences in timing of the pings?
+Fiona track was wrong because the tag was flooding.
 
 2.  Why do you think there are some 'spikes' in the data?
+differences in accuracy?
 
 To correct these data, we are going to use a State-Space Model (SSM) as implemented in *aniMotum*. SSMs are powerful tools for conducting quality control of and making behavioural inference from animal tracking data (noisy observations). The SSM estimate true location and behaviour states, separating ecologically meaningful signals from the noise of sensor measurements.
 
@@ -306,7 +312,7 @@ sese.fit.1 <- fit_ssm(sese.raw,
 
 # Fit a SSM using a Random Walk for the Crabeater seal dataset 
 cese.fit.1 <- fit_ssm(cese.raw, 
-               vmax= 4, 
+               vmax= 4, #max speed
                model = "rw", # Use the  random walk model
                time.step = 6, # Get a location every 6 hours 
                control = ssm_control(verbose = 0))
@@ -534,6 +540,7 @@ By comparing the data to the raw tracks, we can see how the *aniMotum* package n
 Now that we have the final corrected model (mp), let's focus on the high-quality crabeater seals dataset and use that output to investigate more about their movement patterns. We need to use the package *move* to calculate distances between points, so that we can estimate things such as total distance traveled and transit rate.
 
 ```{r}
+install.packages("move")
 library(move)
 
 # Make sure that the data are sorted by animal ID and in the correct chronological order 
@@ -568,6 +575,7 @@ sapply(dist.cese, mean)
 ```
 
 3.  What is the mean transit rate for each individual in km/h?
+1.2 km/hr for Anna
 
 To compare with the transit rate calculated by the package *move*, we can estimate the speed and mean
 
@@ -582,6 +590,7 @@ Now that we have estimated the transit rate in two different ways, we can compar
 
 4.  What is the mean 'speed' for each individual in km/h?
 
+
 Another variable that the package *move* allows us to estimate is the heading (also known as azimuth or direction of travel/movement) of trajectory. North is represented by 0
 
 ```{r}
@@ -592,6 +601,7 @@ sapply(angle.cese, median) # Calculate the median heading in degrees
 ```
 
 5)  Do crabeater seals move predominantly along the N-S axis or E-W?
+
 
 We need to calculate the length of the track (total distance travelled, in km)
 
@@ -612,6 +622,7 @@ sapply(t.dist.cese, "/" , 1000) # Transforms the distance to km
 Finally, let's find out if the seals move more during the day or night. For this part of the analysis, we will be using the package *maptools* and focus on just one of the seals,
 
 ```{r}
+install.packages("maptools")
 library(maptools)
 
 ## Night is defined  as the time when the sun, at the beginning and end of a segment, is 6 degrees below the horizon
