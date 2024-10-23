@@ -21,7 +21,7 @@ And you can read the paper: Luque SP, Fried R (2011) Recursive Filtering for Zer
 ```{r}
 # The following line will install the package and any other dependencies it might need to run correctly
 #options(repos = list(CRAN="http://cran.rstudio.com/"))
-#install.packages('diveMove', dependencies = TRUE)
+install.packages('diveMove', dependencies = TRUE)
 ```
 
 The second package you need to install to work on the data today is called *aniMotum*, a State-Space model that is used to filter raw tracking data (GLS, Argos and GPS) and fits an animal movement model to those data to get location estimates. This method is a very robust way to estimate realistic tracks for marine vertebrates, incorporating the intrinsic uncertainty of estimated locations through various methods, and a realistic animal movement data. The output generated provides a location estimate at regular time intervals, each one with an estimated Standard Error. Be aware, though, that the error estimated by *aniMotum* is Gaussian, which is not particularly realistic for GLS data, where the errors are Non-Gaussian.
@@ -34,10 +34,10 @@ And you can read the paper explaining the method here: Jonsen, I. D., Grecian, W
 
 ```{r}
 # Install aniMotum from Jonsen's R-universe repository
-#install.packages("aniMotum", 
-#                 repos = c("https://cloud.r-project.org",
-#                 "https://ianjonsen.r-universe.dev"),
-#                 dependencies = TRUE)
+install.packages("aniMotum", 
+                repos = c("https://cloud.r-project.org",
+                 "https://ianjonsen.r-universe.dev"),
+                 dependencies = TRUE)
 ```
 
 Now that we have both packages installed, we can start to analyse the data.
