@@ -67,6 +67,7 @@ Now we can go ahead and import the data
 
 ```{r}
 # Read the data into a TDR object 
+# This data set is the antarctic fur seal from a TDR (time-depth recorder) and has raw diving data. It needs to be processed before we can use it.
 tdr.anfs <- readTDR('../data/ANFSdives.csv', dateCol=2,timeCol=2,depthCol=3,speed=FALSE,concurrentCols=4:7,dtformat="%H:%M:%S %d-%b-%Y",tz="GMT")
 
 # Plot the data , for visualisation purposes 
@@ -74,21 +75,26 @@ plotTDR(tdr.anfs)
 
 
 # Test the functionality of the interactive tool
-#dcalib <- calibrateDepth(tdr.anfs)
+dcalib <- calibrateDepth(tdr.anfs)
+#error in .plotTDR(time, depth) : tcltk support is absent
+
+# The 0 level (surface) has shifted in the graph, so we need to correct for that (calibrate) which forms part of the data processing.
 
 ```
 
+
 As you could see, the graphical interface does not work very smoothly in RStudio, and this particular record is only 10 days long. You can imagine how complicated it can be to work with large datasets (i.e., months) as these instruments do collect data at a very high frequency.
 
-You can try running the code in R alone, as it works a bit better. However, we will use instead the option where we specify the parameters we want to use for this species.
+You can try running the code in R alone, as it works a bit better. However, we will instead use the option where we specify the parameters we want to use for this species.
 
 ```{r}
 # Process the raw TDR data (zoc and dive parameters), based on parameters previously estimated for the species
+ # Most TDRs have a dry-wet sensor. 
 
 tdr.anfs.p <-calibrateDepth(tdr.anfs,#
-                             dive.thr = 5,
-                             dry.thr = 70,
-                             wet.cond = depth>(-40),
+                             dive.thr = 5, #needs to go below 5m to be considered a dive
+                             dry.thr = 70, #measurement of the voltage, anything >70 could be a dive.
+                             wet.cond = depth>(-40), 
                              wet.thr = 4,
                              zoc.method = c("filter"),
                              k = c(3,1800),
@@ -106,7 +112,7 @@ tdr.anfs.p <-calibrateDepth(tdr.anfs,#
 
 The parameters to run *diveMove* were selected based on an analysis of the data by an expert and it's not necessary to understand them for the purposes of this practical. However, it's worth to explore some of them (if you are curious about the rest, you can read the help documentation and find information on the author's GitHub).
 
--   dive.thr: Threshold depth below which an underwater phase should be considered a dive
+-   dive.thr: Threshold depth below which an underwater phase should be considered a dive (how do you define a dive?)
 
 -   dry.thr: Dry threshold in seconds.Dry phases shorter than this threshold will considered as wet
 
@@ -142,14 +148,19 @@ As you can see, the figure shows the whole record indicating the Zero-Offset Cor
 Based on the plot, can you answer the following questions?
 
 1)  How many foraging bouts can you identify in this record?
+Potentially 5 foraging bouts. 
 
 2)  What kind of foraging strategy is used by Antarctic fur seals?
+You are likely to see some wiggles as they dive and go to depth to forage and then come up, rest, and repeat. 
+Epipelagic dive behavior: wiggles and above 200 m. Not benthic because of the wiggles. They eat, krill which is at that depth.
 
 Zoom in to look at bout #5 in detail. Considering that the local time zone for these data is UTC-3
 
 3)  Can you identify if the shallow dives happened at night or during the day?
+shallow dives were early in the morning
 
 4)  What about the deep dives? Can you think why this is the case?
+They were at night, which could be when they are hunting
 
 The full record is too long to see much of the diving behaviour , so lets zoom in into subset to inspect them in detail
 
@@ -161,10 +172,15 @@ plotTDR(tdr.anfs.p, diveNo = 538:543)
 Based on this subset of dives, please respond to the following questions:
 
 5)  Do all dives have a bottom phase?
+Bottom phase = amount of time the animal spends within 80% of the max depth. Not all dives have a bottom phase, some do. The dives with the wiggles do have a bottom phase, the deeper dive does not. 
 
 6)  What is the approximate depth of the deepest dive in this subset?
+Around 115 m
 
 7)  What do you think the 'wiggles' can be used as proxies of?
+Prey abundance?
+Foraging activity. 
+
 
 Now that we have checked visually the dive record of this individual, we can export the results of the analyses for each dive and export them to Excel to calculate some basic statistics to better understand the behaviour of the species
 
@@ -177,7 +193,7 @@ tdr.anfs.s<-diveStats(tdr.anfs.p) # Extracts the statistics for each dive identi
 ## Export the data to Excel files to answer the last set of questions
 # You might need to install the library
 
-# install.packages("writexl")
+install.packages("writexl")
 
 library(writexl) # Loads the library
 
