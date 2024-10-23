@@ -1,0 +1,628 @@
+---
+title: "Biologging and Telemetry MVEC"
+author: "Luis Huckstadt"
+date: "2024-10-14"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+For this practical, we will start off by installing the packages required.. We need to install the R package *diveMove*, which we will be using to analyse an example of diving data from an Antarctic fur seal. The package *diveMove* corrects the data for the drift at the surface (Zero-Offset Correction, ZOC), identified the beginning and end of each dive and calculate a series of metrics and parameters for each dive.
+
+If you are interested in learning more about this method, you can check the website <https://cran.r-project.org/web/packages/diveMove/index.html>
+
+And you can read the paper: Luque SP, Fried R (2011) Recursive Filtering for Zero Offset Correction of Diving Depth Time Series with GNU R Package diveMove. PLOS ONE 6(1): e15850. <https://doi.org/10.1371/journal.pone.0015850>
+
+```{r}
+# The following line will install the package and any other dependencies it might need to run correctly
+#options(repos = list(CRAN="http://cran.rstudio.com/"))
+#install.packages('diveMove', dependencies = TRUE)
+```
+
+The second package you need to install to work on the data today is called *aniMotum*, a State-Space model that is used to filter raw tracking data (GLS, Argos and GPS) and fits an animal movement model to those data to get location estimates. This method is a very robust way to estimate realistic tracks for marine vertebrates, incorporating the intrinsic uncertainty of estimated locations through various methods, and a realistic animal movement data. The output generated provides a location estimate at regular time intervals, each one with an estimated Standard Error. Be aware, though, that the error estimated by *aniMotum* is Gaussian, which is not particularly realistic for GLS data, where the errors are Non-Gaussian.
+
+We will be using this R package to analyse a track from Southern elephant seals (Argos), and crabeater seals (GPS + Argos).
+
+For further information about *aniMotum*, you can visit <https://github.com/ianjonsen/aniMotum>
+
+And you can read the paper explaining the method here: Jonsen, I. D., Grecian, W. J., Phillips, L., Carroll, G., McMahon, C., Harcourt, R. G., Hindell, M. A., & Patterson, T. A. (2023). *aniMotum*, an R package for animal movement data: Rapid quality control, behavioural estimation and simulation. Methods in Ecology and Evolution, 14, 806-- 816. <https://doi.org/10.1111/2041-210X.14060>
+
+```{r}
+# Install aniMotum from Jonsen's R-universe repository
+#install.packages("aniMotum", 
+#                 repos = c("https://cloud.r-project.org",
+#                 "https://ianjonsen.r-universe.dev"),
+#                 dependencies = TRUE)
+```
+
+Now that we have both packages installed, we can start to analyse the data.
+
+[**A. SETTING THE WORKSPACE**]{.underline}
+
+We have three datasets presented as Comma-Separated Values (CSV) files. The file ANFSdives.csv contains raw diving data from Antarctic Fur Seals collected by a Wildlife Computer's MK9 Time-Depth Recorder (TDR), that needs to be processed before we can use it.
+
+The second dataset is named SESEtracks.csv, and this one contains raw Argos tracking data from southern elephant seals tagged in Tierra del Fuego, Chile. These tracking data were collected using a Sea Mammal Research Unit's CTD-SRDL.
+
+The third dataset is named CESEtracks.csv. This files has Argos + GPS data collected from crabeater seals outfitted with Wildlife Computers's SPLASH-F along the Western Antarctic Peninsula.
+
+
+NOTE: At any point, if you are not sure what a function does, you can use the help by typing '?' followed by the function name. For example, type '?calibrateDepth'. You can run chunks of the script by clicking on the green arrow at the top right of each 'chunk', you can highlight a command or a line and hit the keys 'Ctrl + Enter', or you can copy and paste in the console.
+
+[**B. ANTARCTIC FUR SEAL DIVING DATA**]{.underline}
+
+Before starting the analysis we have to load the package *diveMove*
+
+```{r}
+# Loads diveMove
+library(diveMove)
+
+```
+
+Now we can go ahead and import the data
+
+```{r}
+# Read the data into a TDR object 
+tdr.anfs <- readTDR('../data/ANFSdives.csv', dateCol=2,timeCol=2,depthCol=3,speed=FALSE,concurrentCols=4:7,dtformat="%H:%M:%S %d-%b-%Y",tz="GMT")
+
+# Plot the data , for visualisation purposes 
+plotTDR(tdr.anfs)
+
+
+# Test the functionality of the interactive tool
+#dcalib <- calibrateDepth(tdr.anfs)
+
+```
+
+As you could see, the graphical interface does not work very smoothly in RStudio, and this particular record is only 10 days long. You can imagine how complicated it can be to work with large datasets (i.e., months) as these instruments do collect data at a very high frequency.
+
+You can try running the code in R alone, as it works a bit better. However, we will use instead the option where we specify the parameters we want to use for this species.
+
+```{r}
+# Process the raw TDR data (zoc and dive parameters), based on parameters previously estimated for the species
+
+tdr.anfs.p <-calibrateDepth(tdr.anfs,#
+                             dive.thr = 5,
+                             dry.thr = 70,
+                             wet.cond = depth>(-40),
+                             wet.thr = 4,
+                             zoc.method = c("filter"),
+                             k = c(3,1800),
+                             probs = c(0.5,0.02),
+                             interp.wet = FALSE,
+                             dive.modl = c("unimodal"),
+                             smooth.par = 0.1,
+                             knot.factor = 3,
+                             descent.crit.q = 0,
+                             ascent.crit.q = 0,
+                             depth.bounds = c(-5,10), 
+                             na.rm=FALSE)
+
+```
+
+The parameters to run *diveMove* were selected based on an analysis of the data by an expert and it's not necessary to understand them for the purposes of this practical. However, it's worth to explore some of them (if you are curious about the rest, you can read the help documentation and find information on the author's GitHub).
+
+-   dive.thr: Threshold depth below which an underwater phase should be considered a dive
+
+-   dry.thr: Dry threshold in seconds.Dry phases shorter than this threshold will considered as wet
+
+-   wet.cond: Indicates which observations should be considered wet.
+
+-   wet.thr: Wet threshold in seconds. At-sea phases shorter than this threshold will be considered as trivial wet
+
+-   zoc.method: Character string to indicate the method to use for zero offset correction. One of "visual", "offset", or "filter"
+
+Now that we have run *diveMove*, let's look at the data. The first step will be to plot the full record.
+
+```{r}
+# Plot the full record
+plotTDR(tdr.anfs.p)
+```
+
+As you can see, the figure shows the whole record indicating the Zero-Offset Corrections and some of the parameters it estimated for each dive, indicated with different colours. The colour for each phase may change depending on the dive, so pay close attention to the legend. The phases are:
+
+-   X: Surface
+
+-   D: Descent
+
+-   DB: Descent/Bottom (transition)
+
+-   B: Bottom
+
+-   BA: Bottom/Ascent (transition)
+
+-   DA: Descent/Ascent (transition, for dives with no bottom phase)
+
+-   A: Ascent
+
+Based on the plot, can you answer the following questions?
+
+1)  How many foraging bouts can you identify in this record?
+
+2)  What kind of foraging strategy is used by Antarctic fur seals?
+
+Zoom in to look at bout #5 in detail. Considering that the local time zone for these data is UTC-3
+
+3)  Can you identify if the shallow dives happened at night or during the day?
+
+4)  What about the deep dives? Can you think why this is the case?
+
+The full record is too long to see much of the diving behaviour , so lets zoom in into subset to inspect them in detail
+
+```{r}
+# Plot dives 538 through 543
+plotTDR(tdr.anfs.p, diveNo = 538:543)
+```
+
+Based on this subset of dives, please respond to the following questions:
+
+5)  Do all dives have a bottom phase?
+
+6)  What is the approximate depth of the deepest dive in this subset?
+
+7)  What do you think the 'wiggles' can be used as proxies of?
+
+Now that we have checked visually the dive record of this individual, we can export the results of the analyses for each dive and export them to Excel to calculate some basic statistics to better understand the behaviour of the species
+
+```{r}
+tdr.anfs.o <-getTDR(tdr.anfs.p) # Gets the ZOC'd data 
+plotTDR(tdr.anfs.o) # For visualisation purposes only. This plots the full corrected diving record
+tdr.anfs.o<-as.data.frame(tdr.anfs.o) # Converts TDR object into a dataframe
+tdr.anfs.s<-diveStats(tdr.anfs.p) # Extracts the statistics for each dive identified 
+
+## Export the data to Excel files to answer the last set of questions
+# You might need to install the library
+
+# install.packages("writexl")
+
+library(writexl) # Loads the library
+
+write_xlsx(tdr.anfs.o, "../results/ANFStdr_processed.xlsx") # Exports the ZOC'd time series
+write_xlsx(tdr.anfs.s, "../results/ANFStdr_statistics.xlsx") # Exports the dive record statistics
+```
+
+Before analysing the final dataset, let's see some of the parameters that are calculated from the diving record. It requires the package *pander*
+
+```{r}
+library(pander)
+tdrXSumm1 <- head(diveStats(tdr.anfs.p), 2)
+cap <- "Per-dive summaries can be obtained with function `diveStats()`."
+pander(tdrXSumm1, digits=2, caption=cap)
+```
+
+For the final set of questions from this dataset, find and open the file "ANFStdr_statistics.xlsx" in Excel (you can also use Google Sheets). Please, explore the variables in the datasheets, make sure that you understand what they are referring to, and answer the following questions:
+
+8)  What is the mean maximum depth reached by this fur seal?
+
+9)  What is the maximum diving depth reached by this fur seal?
+
+10) What is the mean dive duration by this fur seal?
+
+11) What is the longest dive duration by this fur seal?
+
+12) Do you think that the 'mean' value is a good descriptor of this species' diving behaviour?
+
+[**C. TRACKING DATA**]{.underline}
+
+The first step is to load *aniMotum* and import the tracking data for the crabeater seals
+
+```{r}
+# Load package aniMotum
+library(aniMotum)
+sese.raw <- read.csv("../data/SESEtracks.csv") # Imports the raw tracking data
+cese.raw <- read.csv("../data/CESEtracks.csv") # Imports the raw tracking data
+```
+
+Let's start by taking a look at the raw tracking data for these species. We do this by using the tools available in the libraries *ggplot* and *ggmap.* We are also loading *dplyr* as we need it later in the analysis.
+
+```{r}
+# If you need to install the libraries, run the following two lines that are commented out 
+
+# options(repos = list(CRAN="http://cran.rstudio.com/"))
+# install.packages(c('ggplot', 'dplyr', 'rnaturalearth'), dependencies = TRUE)
+
+library(ggplot2)
+library(rnaturalearth)
+
+# Get the basemap data for the world for the blue fin tuna
+bg <- ne_countries(scale = "large",returnclass = "sf")
+
+# Create map for the Southern elephant seal data
+p1 = ggplot()+
+  
+  # Sets the basemap
+  geom_sf(data = bg)+
+  coord_sf(xlim = range(sese.raw$lon, na.rm = TRUE), 
+           ylim = range(sese.raw$lat, na.rm = TRUE), 
+           expand = FALSE)+
+  
+  # Plots the tracks as lines and points, using the same colours for each individual
+  geom_path(data = sese.raw, 
+            aes(x=lon,y=lat,group=id,color=id), 
+            alpha = 1.2)+
+  geom_point(data = sese.raw, 
+             aes(x=lon,y=lat,group=id,fill=id),
+             alpha = 0.7, shape=21, size = 2)
+p1 <- p1 + ggtitle('Raw tracks Southern Elephant Seals')
+p1 # Outputs the map we just created
+
+# Create map for the Crabeater seal data
+p2 = ggplot()+
+  
+  # Sets the basemap
+  geom_sf(data = bg)+
+  coord_sf(xlim = range(cese.raw$lon, na.rm = TRUE), 
+           ylim = range(cese.raw$lat, na.rm = TRUE), 
+           expand = FALSE)+
+  
+  # Plots the tracks as lines and points, using the same colours for each individual
+  geom_path(data = cese.raw, 
+            aes(x=lon,y=lat,group=id,color=id), 
+            alpha = 1.2)+
+  geom_point(data = cese.raw, 
+             aes(x=lon,y=lat,group=id,fill=id),
+             alpha = 0.7, shape=21, size = 2)
+p2 <- p2 + ggtitle('Raw tracks Crabeater Seals')
+p2 # Outputs the map we just created
+```
+
+Based on this map with the raw data answer the following question:
+
+1.  Do the tracks show any gaps in data transmission?
+
+2.  Why do you think there are some 'spikes' in the data?
+
+To correct these data, we are going to use a State-Space Model (SSM) as implemented in *aniMotum*. SSMs are powerful tools for conducting quality control of and making behavioural inference from animal tracking data (noisy observations). The SSM estimate true location and behaviour states, separating ecologically meaningful signals from the noise of sensor measurements.
+
+For the first attempt, let's try fitting the model using the simpler model, a random walk.
+
+```{r}
+# Fit a SSM using a Random Walk for the Southern elephant seal dataset 
+sese.fit.1 <- fit_ssm(sese.raw, 
+               vmax= 4, 
+               model = "rw", # Use the random walk model
+               time.step = 6, # Get a location every 6 hours 
+               control = ssm_control(verbose = 0))
+
+# Fit a SSM using a Random Walk for the Crabeater seal dataset 
+cese.fit.1 <- fit_ssm(cese.raw, 
+               vmax= 4, 
+               model = "rw", # Use the  random walk model
+               time.step = 6, # Get a location every 6 hours 
+               control = ssm_control(verbose = 0))
+```
+
+Now, let's try with a Correlated Random Walk model
+
+```{r}
+# Fit a SSM using a Correlated Random Walk 
+
+# Elephant seals
+sese.fit.2 <- fit_ssm(sese.raw, 
+               vmax= 4, 
+               model = "crw", # Use the correlated random walk model
+               time.step = 6, # Get a location every 6 hours 
+               control = ssm_control(verbose = 0))
+
+# Crabeater seals
+cese.fit.2 <- fit_ssm(cese.raw, 
+               vmax= 4, 
+               model = "crw", # Use the correlated random walk model
+               time.step = 6, # Get a location every 6 hours 
+               control = ssm_control(verbose = 0))
+```
+
+Finally, let's use the more complex Movement persistence model
+
+```{r}
+# Elephant seal
+sese.fit.3 <- fit_ssm(sese.raw, 
+               vmax= 4, 
+               model = "mp", # Use the movement persistence model
+               time.step = 6, # Get a location every 6 hours 
+               control = ssm_control(verbose = 0))
+
+# Crabeater seal
+cese.fit.3 <- fit_ssm(cese.raw, 
+               vmax= 4, 
+               model = "mp", # Use the movement persistence model
+               time.step = 6, # Get a location every 6 hours 
+               control = ssm_control(verbose = 0))
+
+```
+
+To visualise the differences, let's extract the fitted data from the output and plot the tracks for comparisons
+
+```{r}
+
+library(grid)
+library(gridExtra)
+
+# Extract the data for each one of the fitted models for elephant seals
+sese.out.1 <- grab(sese.fit.1, what = "predicted", as_sf = FALSE)
+sese.out.2 <- grab(sese.fit.2, what = "predicted", as_sf = FALSE)
+sese.out.3 <- grab(sese.fit.3, what = "predicted", as_sf = FALSE)
+
+# Extract the data for each one of the fitted models for crabeater seals
+cese.out.1 <- grab(cese.fit.1, what = "predicted", as_sf = FALSE)
+cese.out.2 <- grab(cese.fit.2, what = "predicted", as_sf = FALSE)
+cese.out.3 <- grab(cese.fit.3, what = "predicted", as_sf = FALSE)
+```
+
+Now that we have run the models, let's plot the data to see how they performed
+
+```{r}
+# Create the maps for each model and then add them all in the same figure
+
+# Model 1 - Random walk
+
+# Elephant seal
+sese.m1 = ggplot()+
+  
+  # Sets the basemap
+  geom_sf(data = bg)+
+  coord_sf(xlim = range(sese.out.1$lon, na.rm = TRUE), 
+           ylim = range(sese.out.1$lat, na.rm = TRUE), 
+           expand = FALSE)+
+  
+  # Plots the tracks as lines and points, using the same colours for each individual
+  geom_path(data = sese.out.1, 
+            aes(x=lon,y=lat,group=id,color=id), 
+            alpha = 1.2)+
+  geom_point(data = sese.out.1, 
+             aes(x=lon,y=lat,group=id,fill=id),
+             alpha = 0.7, shape=21, size = 2)
+
+sese.m1 <- sese.m1 + ggtitle('Fit using a Random walk - Elephant seals') # 
+
+
+# Crabeater seal
+cese.m1 = ggplot()+
+  
+  # Sets the basemap
+  geom_sf(data = bg)+
+  coord_sf(xlim = range(cese.out.1$lon, na.rm = TRUE), 
+           ylim = range(cese.out.1$lat, na.rm = TRUE), 
+           expand = FALSE)+
+  
+  # Plots the tracks as lines and points, using the same colours for each individual
+  geom_path(data = cese.out.1, 
+            aes(x=lon,y=lat,group=id,color=id), 
+            alpha = 1.2)+
+  geom_point(data = cese.out.1, 
+             aes(x=lon,y=lat,group=id,fill=id),
+             alpha = 0.7, shape=21, size = 2)
+
+cese.m1 <- cese.m1 + ggtitle('Fit using a Random walk - Crabeater seals') # 
+```
+
+Second model - Correlated Random Walk
+
+```{r}
+
+# Elephant seal
+# Model 2 - Correlated Random Walk
+
+sese.m2 = ggplot()+
+  
+  # Sets the basemap
+  geom_sf(data = bg)+
+  coord_sf(xlim = range(sese.out.2$lon, na.rm = TRUE), 
+           ylim = range(sese.out.2$lat, na.rm = TRUE), 
+           expand = FALSE)+
+  
+  # Plots the tracks as lines and points, using the same colours for each individual
+  geom_path(data = sese.out.2, 
+            aes(x=lon,y=lat,group=id,color=id), 
+            alpha = 1.2)+
+  geom_point(data = sese.out.2, 
+             aes(x=lon,y=lat,group=id,fill=id),
+             alpha = 0.7, shape=21, size = 2)
+
+sese.m2 <- sese.m2 + ggtitle('Fit using a Correlated Random walk - Elephant Seal') #
+
+# Crabeater seal
+# Model 2 - Correlated Random Walk
+
+cese.m2 = ggplot()+
+  
+  # Sets the basemap
+  geom_sf(data = bg)+
+  coord_sf(xlim = range(cese.out.2$lon, na.rm = TRUE), 
+           ylim = range(cese.out.2$lat, na.rm = TRUE), 
+           expand = FALSE)+
+  
+  # Plots the tracks as lines and points, using the same colours for each individual
+  geom_path(data = cese.out.2, 
+            aes(x=lon,y=lat,group=id,color=id), 
+            alpha = 1.2)+
+  geom_point(data = cese.out.2, 
+             aes(x=lon,y=lat,group=id,fill=id),
+             alpha = 0.7, shape=21, size = 2)
+
+cese.m2 <- cese.m2 + ggtitle('Fit using a Correlated Random walk - Crabeater Seal') #
+```
+
+Finally, let's run the tracks through the Movement Persistence Model
+
+```{r}
+
+# Model 3 - Movement Persistence Model
+
+# Elephant seal
+sese.m3 = ggplot()+
+  
+  # Sets the basemap
+  geom_sf(data = bg)+
+  coord_sf(xlim = range(sese.out.3$lon, na.rm = TRUE), 
+           ylim = range(sese.out.3$lat, na.rm = TRUE), 
+           expand = FALSE)+
+  
+  # Plots the tracks as lines and points, using the same colours for each individual
+  geom_path(data = sese.out.3, 
+            aes(x=lon,y=lat,group=id,color=id), 
+            alpha = 1.2)+
+  geom_point(data = sese.out.3, 
+             aes(x=lon,y=lat,group=id,fill=id),
+             alpha = 0.7, shape=21, size = 2)
+
+sese.m3 <- sese.m3 + ggtitle('Fit using a Movement Persistence model - Elephant Seal') # 
+
+# Crabeater seal
+cese.m3 = ggplot()+
+  
+  # Sets the basemap
+  geom_sf(data = bg)+
+  coord_sf(xlim = range(cese.out.3$lon, na.rm = TRUE), 
+           ylim = range(cese.out.3$lat, na.rm = TRUE), 
+           expand = FALSE)+
+  
+  # Plots the tracks as lines and points, using the same colours for each individual
+  geom_path(data = cese.out.3, 
+            aes(x=lon,y=lat,group=id,color=id), 
+            alpha = 1.2)+
+  geom_point(data = cese.out.3, 
+             aes(x=lon,y=lat,group=id,fill=id),
+             alpha = 0.7, shape=21, size = 2)
+
+cese.m3 <- cese.m3 + ggtitle('Fit using a Movement Persistence model - Crabeter Seal') # 
+```
+
+Create the figure comparing the outputs for the Elephant seals
+
+```{r}
+
+# Create a figure with the 4 maps for the Elephant Seals
+grid.arrange(p1, sese.m1, sese.m2, sese.m3, nrow = 2, ncol = 2)
+```
+
+Create the figure comparing the outputs for the crabeater seals
+
+```{r}
+
+# Create a figure with the 4 maps for the Crabeater Seals
+grid.arrange(p2, cese.m1, cese.m2, cese.m3, nrow = 2, ncol = 2)
+
+```
+
+The crabeater seal dataset is of particularly high quality because it corresponds to polar seals and the Argos satellite system is polar-orbiting. Besides that, the data contains both Argos + GPS data.
+
+For other datasets, you should expect to see larger differences for species that don't surface that often, that expose the tags only briefly to the air (e.g. penguins 'porpoising'), or that inhabit lower latitudes.
+
+By comparing the data to the raw tracks, we can see how the *aniMotum* package not only dealt with the locations with error, but it also corrected the locations that were on land (which are impossible for marine vertebrates) and produced a track with locations interpolated at a regular interval (in this case 3 hours) and it provides an estimate of the uncertainty for each location.
+
+Now that we have the final corrected model (mp), let's focus on the high-quality crabeater seals dataset and use that output to investigate more about their movement patterns. We need to use the package *move* to calculate distances between points, so that we can estimate things such as total distance traveled and transit rate.
+
+```{r}
+library(move)
+
+# Make sure that the data are sorted by animal ID and in the correct chronological order 
+# Using out.3 as that's the output from the mp model to create a move object
+
+move.cese <- move(x=cese.out.3$lon, 
+                  y=cese.out.3$lat,
+                  time=cese.out.3$date,
+                  proj=CRS("+proj=longlat +ellps=WGS84 +datum=WGS84"), 
+                  animal=cese.out.3$id) 
+
+
+# Plot the data to check we loaded the correct data
+plot(move.cese, xlab="Longitude", ylab="Latitude", type="l", pch=16, lwd=0.5)
+
+
+# If we wanted to check that the interpolation is every 3 hours, as we did when running the SSM, we can check as follows
+steps.cese <-timeLag(move.cese, units="hours")
+
+
+# Now, the next step is to calculate the distance between locations. Because the units are in degrees (lat, lon), the package move returns the distance in meters
+dist.cese <- distance(move.cese)
+
+
+```
+
+Now that we have calculated some basic track metrics for the crabeater seal data, let's analyse the data
+
+```{r}
+# Calculate the mean step distance in meters. As these data are interpolated, then stemp length is giving us transit rate in m/3 hours
+sapply(dist.cese, mean)
+```
+
+3.  What is the mean transit rate for each individual in km/h?
+
+To compare with the transit rate calculated by the package *move*, we can estimate the speed and mean
+
+```{r}
+
+speed.cese <- speed(move.cese) # Speed (or transit rate) in m/s
+
+sapply(speed.cese, mean) # # Calculate the mean speed in meters/second
+```
+
+Now that we have estimated the transit rate in two different ways, we can compare them.
+
+4.  What is the mean 'speed' for each individual in km/h?
+
+Another variable that the package *move* allows us to estimate is the heading (also known as azimuth or direction of travel/movement) of trajectory. North is represented by 0
+
+```{r}
+
+angle.cese <- angle(move.cese) # Calculate the heading in degrees
+
+sapply(angle.cese, median) # Calculate the median heading in degrees
+```
+
+5)  Do crabeater seals move predominantly along the N-S axis or E-W?
+
+We need to calculate the length of the track (total distance travelled, in km)
+
+```{r}
+
+t.dist.cese <- sapply(dist.cese, sum) # Calculates the total distance covered by each individual, in meter
+
+sapply(t.dist.cese, "/" , 1000) # Transforms the distance to km
+
+```
+
+6.  What are the average and Standard Deviation of the distance travelled by the crabeater seals?
+
+<!-- -->
+
+7.  What factor you think is biasing the comparison across these values?
+
+Finally, let's find out if the seals move more during the day or night. For this part of the analysis, we will be using the package *maptools* and focus on just one of the seals,
+
+```{r}
+library(maptools)
+
+## Night is defined  as the time when the sun, at the beginning and end of a segment, is 6 degrees below the horizon
+cese <- cese.out.3[which(cese.out.3$id == "Captain America"),] # Get the track for Stella alone
+
+# Create the move object
+cese <-  move(x=cese$lon, 
+                  y=cese$lat,
+                  time=cese$date,
+                  proj=CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")) 
+
+DayNight <- rep("Day", n.locs(cese)-1)
+
+DayNight[solarpos(cese[-n.locs(cese)], timestamps(cese)[-n.locs(cese)])[,2] < -6 & solarpos(cese[-1], timestamps(cese)[-1])[,2] < -6] <- "Night"
+
+## assigning to each segment if it is during daytime or night
+cese.burst <- burst(x=cese, f=DayNight)
+
+### in the default the size of the circles is relative to the total time spent within each burst segment 
+plotBursts(cese.burst,breaks=5, col=c("red", "black"), pch=19, add=F,main="Size of points: total time spent in burst segment", asp=1)
+legend("bottomleft",legend=c("day","night"), col=c("red", "black"), pch=19)
+```
+
+```{r}
+## here, e.g., the size of the circles is relative to the total distance moved within each burst segment
+plotBursts(object=cese.burst, breaks=5, sizeFUN=function(x){sum(distance(x))},col=c("red", "black"), pch=19, add=F,main="Size of points: total distance moved in burst segment", asp=1)
+legend("bottomleft",legend=c("day","night"), col=c("red", "black"), pch=19)
+```
+
+8.  Why do you think that these seals spend more time and cover longer distances at night?
