@@ -1,0 +1,74 @@
+---
+title: "Practical 3 Answers"
+output: html_document
+date: "2024-10-29"
+---
+
+# Section 2
+Import the data
+```{r}
+getwd()
+setwd("/Users/carlaleone/Desktop/Exeter/Practical 3")
+tl.data <- read.table("rsbl20170434_si_002.csv", header=TRUE, sep = ",", 
+                      stringsAsFactors = FALSE)
+
+head(tl.data)
+```
+
+Finding the sample size for each roe deer population for which we have telomere length data.
+```{r}
+table(tl.data$Population)
+# males and females per pop
+table(tl.data$Sex, tl.data$Population)
+
+#3.1 m and f per age class
+table(tl.data$Sex, tl.data$Age, tl.data$Population)
+
+
+```
+
+## Descriptive Stats
+aggregate tool for obtaining some stats
+```{r}
+aggregate(tl.data$BodyMass, by=list(tl.data$Population), mean)
+# can use the output for more calcs
+mean.bm.age <- aggregate(tl.data$BodyMass, by=list(tl.data$Age), mean)
+mean.bm.age
+# fix column names
+colnames(mean.bm.age) <- c("Age", "MeanBodyMass")
+head(mean.bm.age)
+
+# other functions with aggregate()
+sd.bm.age <- aggregate(tl.data$BodyMass, by=list(tl.data$Age), sd)
+colnames(sd.bm.age) <- c("Age", "SdBodyMass")
+head(sd.bm.age)
+```
+combine mean.bm.age and sd.bm.age into a single data frame. In this case, as both data frames are the same size and in the same order, we can simply take sd.bm.age$SdBodyMass and add it to mean.bm.age:
+```{r}
+mean.bm.age$SdBodyMass <- sd.bm.age$SdBodyMass
+head(mean.bm.age)
+```
+
+## Missing data
+```{r}
+summary(tl.data)
+#no missing data 
+```
+our data is not missing anything, but example in case we had to deal with it at any point byt adding a Body Mass column that is missing data:
+```{r}
+tl.data$BodyMass2 <- tl.data$BodyMass
+tl.data$BodyMass2[sample(nrow(tl.data), 5)] <- NA
+summary(tl.data$BodyMass2)
+
+```
+
+### Excercise 3.2
+Explore sample () function and create a new variable RandomAge and calculate the mean body mass for each level of RandomAge. Compare these to the mean body mass per age class calculated above. What does this difference suggest with respect to the effect of age on body mass?
+```{r}
+?sample()
+tl.data$SampleAge<- tl.data$Age[sample(nrow(tl.data)),]
+```
+
+
+
+
