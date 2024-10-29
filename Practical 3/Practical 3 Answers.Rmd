@@ -66,9 +66,126 @@ summary(tl.data$BodyMass2)
 Explore sample () function and create a new variable RandomAge and calculate the mean body mass for each level of RandomAge. Compare these to the mean body mass per age class calculated above. What does this difference suggest with respect to the effect of age on body mass?
 ```{r}
 ?sample()
-tl.data$SampleAge<- tl.data$Age[sample(nrow(tl.data)),]
+age<- c(1:13)
+tl.data$SampleAge<- sample(age, nrow(tl.data), replace = TRUE)
+View(tl.data)
+sample.age.mean<- aggregate(tl.data$BodyMass, by=list(tl.data$SampleAge), mean)
+sample.age.mean
+mean.bm.age
+```
+
+Back to NAs
+```{r}
+mean(tl.data$BodyMass2[is.na(tl.data$BodyMass2)==FALSE])
+# calculating the mean
+
+mean(na.omit(tl.data$BodyMass2))
+
+mean(tl.data$BodyMass2, na.rm = TRUE)
+
+
+```
+However, be careful when using na.omit(): When applied to a complete data frame (and not a single column as we did above), it will remove all records with NAs, also if the NA’s are located in a variable that is not relevant to your analysis.
+
+Also,when we try to subset on the basis of variable that contains NA’s, R will retain the missing values:
+```{r}
+tl.data$BodyMass2[tl.data$BodyMass2 > 26]
+length(tl.data$BodyMass2[tl.data$BodyMass2 > 26])
+# need to remove NAs
+length(tl.data$BodyMass2[is.na(tl.data$BodyMass2)==FALSE & tl.data$BodyMass2 > 26])
+# can also use NA omit again
+length(tl.data$BodyMass2[na.omit(tl.data$BodyMass2) > 26])
+
+
 ```
 
 
+# Does telomere length decline with age?
+## Linear regression:
+To test if telomeres get shorter with age, we need to do a regression of RTL against Age using lm(), but before we do this, let’s look at the distribution of both variables by plotting two histograms:
+```{r}
+par(mfrow=c(1,2))
+hist(tl.data$Age)
+hist(tl.data$RTL)
+```
+The linear model. To specify our linear model, we first specify the dependent variable (RTL), followed by a ~ and the predictor variable Age:
+```{r}
+lm(RTL ~ Age, data = tl.data)
+summary(lm(RTL ~ Age, data = tl.data))
+
+# next using an anova to see if the slope is significantly different from 0:
+anova(lm(RTL ~ Age, data = tl.data))
+
+```
+
+# Model Diagnostics
+Checking if meet the assumptions
+```{r}
+m.rtl.age <- lm(RTL ~ Age, data = tl.data)
+par(mfrow=c(2,2))
+plot(m.rtl.age)
+```
+extracting values from the Residuals vs Fitted plot:
+```{r}
+resid.m.rtl.age <- resid(m.rtl.age)
+predict.m.rtl.age <- predict(m.rtl.age)
+#use these values to plot a histogram of the residuals, which creates the QQ Plot
+par(mfrow=c(1,3))
+hist(resid.m.rtl.age)
+plot(resid.m.rtl.age ~ predict.m.rtl.age)
+qqnorm(resid.m.rtl.age)
+qqline(resid.m.rtl.age)
+```
+
+# Plotting a regression
+In a final step, we would like to visualise the (apparent lack of a) relationship between telomere length and age using a scatter plot of RTL against Age:
+```{r}
+par(mfrow=c(1,1))
+plot(RTL ~ Age, data=tl.data)
+plot(RTL ~ Age, data=tl.data, cex.lab=1.2, col="grey", font.lab=2, pch=19, 
+     xlim=c(0,14), ylim=c(0.5, 1.75), xlab="Age (years)", ylab="Relative telomere length")
+abline(m.rtl.age, lty=2, lwd=1.5)
+```
+
+
+# Variation in body mass
+## Effect of age on body mass
+Just as we did for RTL, we can test whether BodyMass changes with age by performing a regression:
+```{r}
+m.bm.age <- lm(BodyMass ~ Age, data=tl.data)
+summary(m.bm.age)
+```
+
+Excercise 3.6 = Plot reisduals vs fitted values, what does it suggest?
+```{r}
+resid.m.bm.age <- resid(m.bm.age)
+predict.m.bm.age <- predict(m.bm.age)
+plot(resid.m.bm.age ~ predict.m.bm.age)
+```
+It is unlikely that individuals continue to grow after a certain age, and hence we would expect a curvilinear effect of age on body mass. We can test this by including age as an additional quadratic term in our model:
+```{r}
+m.bm.age.2 <- lm(BodyMass ~ Age + I(Age^2), data=tl.data)
+summary(m.bm.age.2)
+#Note that to fit Age^2, we need to write I(Age^2).
+#We should never rely solely on the output our linear model, but always visualise the relationship as well:
+plot(BodyMass ~ Age, data=tl.data, cex.lab=1.2, col="grey", font.lab=2, pch=19, 
+     xlab="Age (years)", ylab="Body mass")
+```
+This makes it immediately clear that the relationship between Age and BodyMass is not described very well by a straight line.
+
+Unfortunately abline() does not allow us to plot polynomials, but of course we can plot the fitted values instead:
+```{r}
+age2.fitted <- predict(m.bm.age.2)
+plot(age2.fitted ~ tl.data$Age)
+# but to add to the initial plot...
+plot(BodyMass ~ Age, data=tl.data, cex.lab=1.2, col="grey", font.lab=2, pch=19, 
+     xlab="Age (years)", ylab="Body mass")
+lines(age2.fitted ~ tl.data$Age)
+
+# need to avoid all points being connected.So need to sort the x variable and the y (fitted) variable by the x variable. use sort() and order() functions.
+plot(BodyMass ~ Age, data=tl.data, cex.lab=1.2, col="grey", font.lab=2, pch=19, 
+     xlab="Age (years)", ylab="Body mass")
+lines(age2.fitted[order(tl.data$Age)] ~ sort(tl.data$Age))
+```
 
 
