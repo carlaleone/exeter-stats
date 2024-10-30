@@ -188,4 +188,81 @@ plot(BodyMass ~ Age, data=tl.data, cex.lab=1.2, col="grey", font.lab=2, pch=19,
 lines(age2.fitted[order(tl.data$Age)] ~ sort(tl.data$Age))
 ```
 
+We can also fit Age as a categorical variable with 13 levels. Although this will result in the estimation of 12 rather than 2 parameters, it does not force the relationship with age to be a 2nd-order polynomial (i.e. a quadratic relationship). On the other hand, while it will tell us whether body mass varies among age classes, it does not tell us how body mass increases and/or decreases with age.
+
+We fit a model similar to m.bm.full but Age is a factor:
+```{r}
+m.bm.age.factor <- lm(BodyMass ~ as.factor(Age), data = tl.data)
+summary(m.bm.age.factor)
+```
+All 12 estimates for the effect of age are tested against the intercept (Age=0). But we need the full picture, so do an ANOVA that tests whether there is more variation among age classes than expected by chance.
+```{r}
+anova(m.bm.age.factor)
+
+```
+We would report this as: There is a significant effetc of age on body mass (𝐹12,126 =19.07, P < 0.001).
+
+### Excercise 3.7
+Looking at the plot, the main difference appears to be between individuals of age 1 and those that are older than 1. Test whether this is indeed the case.
+```{r}
+?ifelse()
+class(tl.data$Age)
+tl.data$Age<- as.numeric(tl.data$Age)
+tl.data$age.class<- ifelse(tl.data$Age > 1,2,1)
+tl.data$age.class<- as.factor(tl.data$age.class)
+View(tl.data)
+
+age.class.lm<- aov(BodyMass~age.class, data=tl.data)
+summary(age.class.lm)
+```
+# Differences in body mass between populations
+So far we have analysed data for both populations together. However, according to the authors, previous research has shown that both populations experience marked environmental differences. It would therefore be interesting to test if there is a difference in mean BodyMass between both populations. To this end, we again fit a linear model, but this time with Pop as a categorical predictor:
+```{r}
+m.bm.pop <- lm(BodyMass ~ Population, data=tl.data)
+summary(m.bm.pop)
+anova(m.bm.pop)
+aggregate(tl.data$BodyMass, by=list(tl.data$Population), mean)
+```
+
+# Testing for age, population, and sex
+It is not unlikely that body mass does not only differ between populations, but also between males and females, and between the different age classes. To test this, and to estimate the effect of each of these variables on body mass, we can fit a linear model that includes all of these variables as predictors:
+```{r}
+m.bm.full <- lm(BodyMass ~ Age + I(Age^2) + Population + Sex, data=tl.data)
+summary(m.bm.full)
+?predict
+new_data <- data.frame(Age = 5, Population = "TF", Sex = "M")
+predict.lm(m.bm.full, newdata = new_data)
+```
+
+Could use an anova:
+```{r}
+anova(m.bm.full)
+```
+The p-value for the Sex effect is identical to that obtained previously, this is not true for the others. This is because only the Sex effect is estimated while accounting for all the other effects.
+
+### Excercise 3.1
+Change the order of the effects in m.bm.full and see how this impacts the p-values provided by summary() and anova().
+```{r}
+m.bm.full.2 <- lm(BodyMass ~ Population + I(Age^2) + Sex + Age, data=tl.data)
+anova(m.bm.full.2)
+```
+
+Instead, to test whether the inclusion of Population significantly improves the fit of the model, we fit a model without Population and compare it to m.bm.full:
+```{r}
+m.bm.no.pop <- lm(BodyMass ~ Age + I(Age^2) + Sex, data=tl.data)
+
+anova(m.bm.no.pop, m.bm.full)
+
+```
+This has provided us with the significance of the difference in body mass between both populations, while accounting for all other effects in the model. Note that the p-value is identical to that obtained by the t-test reported by summary().
+
+You now have all the information you need to report the population effect in a publication. For example, you could write something like: After accounting for the effects of age and sex, there was a statistically significant difference in body mass between the two study populations, with individuals in the TF population being 3.09 ± 0.46 kg heavier than individuals in the CH population (𝐹1,134
+=45.1, P < 0.001).
+
+### Excercise 3.11
+Our full model (m.bm.full) did not include any interaction terms. Fit a model that includes all 2-way interactions and use model simplification to arrive at the Minimal Adequate Model (MAM).
+```{r}
+m.bm.interaction<- lm(BodyMass~ Age*Population + Age*Sex + Sex*Population, data = tl.data)
+summary(m.bm.interaction)
+```
 
