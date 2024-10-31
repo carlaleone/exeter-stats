@@ -262,7 +262,57 @@ You now have all the information you need to report the population effect in a p
 ### Excercise 3.11
 Our full model (m.bm.full) did not include any interaction terms. Fit a model that includes all 2-way interactions and use model simplification to arrive at the Minimal Adequate Model (MAM).
 ```{r}
-m.bm.interaction<- lm(BodyMass~ Age*Population + Age*Sex + Sex*Population, data = tl.data)
-summary(m.bm.interaction)
+m1<- lm(BodyMass~ Age + Population + Sex + Age*Population + Age*Sex + Sex*Population, data = tl.data)
+summary(m1)
+
+minimal_model <- step(m1, direction = "backward")
+summary(minimal_model)
+#Lowest AIC is for the model BodyMass ~ Age + Population + Sex + Age*Sex
+
+```
+
+# Effect of age on telomere length, revisited
+In section 3, we concluded that there was no evidence for an effect of age on telomere length. However, in section 4 we found strong evidence for differences between both populations in terms of body mass. It might therefore be worth looking at this relationship in both populations separately.
+
+We can start with two separate regressions:
+```{r}
+summary(lm(RTL ~ Age, data=tl.data[tl.data$Pop=="CH",]))
+# CH Population, negative estimate for age
+
+summary(lm(RTL ~ Age, data=tl.data[tl.data$Pop=="TF",]))
+# TF population, positive estimate for age
+
+```
+
+This is looking promising: Although in neither of the two populations the effect is significantly different from zero (although it is close in the TF population), the effects are going in opposite directions.
+
+However, to formally test whether the effect of age differs between the two populations, we need to test whether the interaction between Age and Population is significant:
+```{r}
+m.age.pop.int <- lm(RTL ~ Age + Population + Age:Population, data=tl.data)
+summary(m.age.pop.int)
+
+#can also specify the model like this: 
+m.age.pop.int <- lm(RTL ~ Age*Population, data=tl.data)
+
+```
+
+To test whether the interaction term is significant, we compare this model to a model that only includes the main effects of Age and Population:
+
+```{r}
+m.age.pop <- lm(RTL ~ Age + Population, data=tl.data)
+anova(m.age.pop, m.age.pop.int)
+```
+To conclude, we would like to plot the this result. To do this, we first plot the results for one population, and then use points() to add the results for the other population in a different colour. Finally, we add use legend() to add a legend to the plot:
+```{r}
+plot(RTL ~ Age, data=tl.data[tl.data$Pop=="CH",], cex.lab=1.2, xlim=c(0,14), 
+     ylim=c(0.5, 1.75), pch=19, col="red", font.lab=2, 
+     xlab="Age (years)", ylab="Relative telomere length")
+
+points(RTL ~ Age, data=tl.data[tl.data$Pop=="TF",], pch=19, col="blue")
+abline(lm(RTL ~ Age, data=tl.data[tl.data$Pop=="CH",]), col="red", lwd=1.5)
+abline(lm(RTL ~ Age, data=tl.data[tl.data$Pop=="TF",]), col="blue", lwd=1.5)
+
+legend(x="topright", legend=c("CH", "TF"), pch=19, lty = 1, 
+       col=c("red", "blue"), title="Population", cex=0.8)
 ```
 
