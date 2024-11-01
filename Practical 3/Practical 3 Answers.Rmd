@@ -23,6 +23,7 @@ table(tl.data$Sex, tl.data$Population)
 
 #3.1 m and f per age class
 table(tl.data$Sex, tl.data$Age, tl.data$Population)
+#If you put population before sex, then the table will make two separate tables for each sex. In this example it has made a separate table for each population.
 
 
 ```
@@ -72,6 +73,17 @@ View(tl.data)
 sample.age.mean<- aggregate(tl.data$BodyMass, by=list(tl.data$SampleAge), mean)
 sample.age.mean
 mean.bm.age
+
+# specifying the aggregate() function
+aggregate(BodyMass~ Age, data= tl.data, mean)
+# or
+mean.bm<- aggregate(tl.data$BodyMass, by = list(tl.data$Age), mean)
+mean.bm
+plot(x ~ Group.1, data = mean.bm, pch =19, col='black')
+abline(bm.reg)
+bm.reg<- lm(x~Group.1, data = mean.bm)
+summary(bm.reg)
+
 ```
 
 Back to NAs
@@ -106,6 +118,7 @@ To test if telomeres get shorter with age, we need to do a regression of RTL aga
 ```{r}
 par(mfrow=c(1,2))
 hist(tl.data$Age)
+#not normal, but also not worried about distribution of the predictors
 hist(tl.data$RTL)
 ```
 The linear model. To specify our linear model, we first specify the dependent variable (RTL), followed by a ~ and the predictor variable Age:
@@ -209,6 +222,7 @@ Looking at the plot, the main difference appears to be between individuals of ag
 class(tl.data$Age)
 tl.data$Age<- as.numeric(tl.data$Age)
 tl.data$age.class<- ifelse(tl.data$Age > 1,2,1)
+# or tl.data$age.class<- ifelse(tl.data$Age == 1,"Juvenile,"Adult")
 tl.data$age.class<- as.factor(tl.data$age.class)
 View(tl.data)
 
