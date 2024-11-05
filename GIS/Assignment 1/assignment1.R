@@ -1,6 +1,6 @@
 library(readr)
 getwd()
-joined <- read_csv("/Users/carlaleone/Desktop/Exeter/GIS/Assignment 1/joined_layer_1.csv")
+joined <- read_csv("/Users/carlaleone/Desktop/Exeter/GIS/Assignment 1/final_joined.csv")
 View(joined)
 plot(joined$n~joined$dist_patrol)
 plot(joined$n~joined$distance_road)
@@ -21,9 +21,26 @@ joined$n<- as.numeric(joined$n)
 #recalculate the carcass density to carcasses/km squared
 joined$density<- (joined$n)/100
 
-#ggplot
+# Linear models for each variable ----
+lm_road<-lm(density~distance_roads, data=joined)
+summary(lm_road)
+
+#river
+lm_river<- lm(density~distance_river, data= joined)
+summary (lm_river)
+
+#patrols
+lm_patrol<- lm(density~distance_patrol, data = joined)
+summary(lm_patrol)
+
+#gates
+lm_gates<- lm(density~distance_gates, data = joined)
+summary(lm_gates)
+
+
+#ggplot roads ----
 # first make the lm
-lm_road<-lm(density~distance_road, data=joined)
+lm_road<-lm(density~distance_roads, data=joined)
 summary(lm_road)
 
 library(tidyr)
@@ -96,10 +113,12 @@ print(violin_plot)
 
 #
 # road and river distance together ----
-plot_roads_rivers <- ggplot(data = joined, aes(x = distance_road, y = density)) +
+plot_roads_rivers <- ggplot(data = joined, aes(x = distance_roads, y = density)) +
   geom_point(aes(color = "Road"), size = 3, shape = 21, fill = "white", alpha = 0.6) +  # Scatter plot for roads
   geom_smooth(method = "lm", se = TRUE, color = "red", linetype = "dashed", fullrange = FALSE, aes(color = "Road")) +  # Linear regression for roads
   geom_smooth(data = joined, aes(x = distance_river, y = density, color = "River"), method = "lm", se = TRUE, linetype = "dashed", fullrange = FALSE) +  # Linear regression for rivers
+  geom_smooth(data = joined, aes(x = distance_patrol, y = density, color = "Patrol"), method = "lm", se= TRUE, linetype = "dashed", fullrange = FALSE) +
+  geom_smooth(data = joined, aes(x = distance_gates, y = density, color = "Gates"), method = "lm", se= TRUE, linetype = "dashed", fullrange = FALSE) +
   labs(
     x = "Distance (km)",
     y = expression("Elephant Poaching Density (km"^2*")"),
