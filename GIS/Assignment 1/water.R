@@ -24,25 +24,39 @@ boxplot(water$density~water$presence_type)
 #linear models ----
 lm_waterhole_density<- lm(density~density_waterholes, data=water)
 lm_waterhole_distance<- lm(density~distance_waterhole, data= water)
-lm_riverdist<- glm(density~distance_river, family = poisson, data =water,)
-combined_lm<- lm(density ~ distance_river*distance_waterhole, data=water)
+lm_riverdist<- lm(density~log(distance_river), data =water)
+combined_lm<- lm(density ~ distance_river*waterhole_presence, data=water)
 summary(combined_lm)
 summary(lm_riverdist)
+#glm for distance to rivers
+glm_riverdist<- glm(density~distance_river, family = quasipoisson(link ="log"), data=water)
+summary(glm_riverdist)
+?glm
+
+
 
 # ggplot waterhole density ----
 library(ggplot2)
-plot_riverdist <- ggplot(data = water, aes(x = distance_river, y = density)) +
-  geom_point(size = 3,shape = 21, alpha = 1.2, color = "black", fill = "orange") +  # Scatter plot
-  geom_smooth(method = "glm", method.args = list(family = poisson), se= FALSE) +  # Linear regression line
+plot_riverdist <- ggplot(data = water, aes(x = log(distance_river), y = density, fill = waterhole_presence)) +
+  geom_point(size = 3,shape = 21, alpha = 1.2, color = "black") +  # Scatter plot
+  geom_smooth(method = "lm", se= TRUE, aes(fill = waterhole_presence, colour = waterhole_presence)) +  # Linear regression line
   labs(
-    x = "Distance to nearest river (km)",
-    y = "Elephant poaching density (carcasses/km²)") +
-  scale_x_continuous(limits = c(0, 40), expand = c(0, 0)) +  # Remove padding on x-axis, set min at 0
-  scale_y_continuous(limits = c(0,0.045), expand = c(0, 0)) +
-  theme_classic()
+    x = "Log10 of distance to nearest river (km)",
+    y = "Poaching density (carcasses/km²)") +
+  scale_x_continuous(limits = c(0, 4), expand = c(0, 0)) +  # Remove padding on x-axis, set min at 0
+  scale_y_continuous(limits = c(0,0.05), expand = c(0, 0)) +
+  theme_classic() +
+  theme (
+  axis.title = element_text(size = 16),  # Increase axis label size
+axis.text = element_text(size = 14),  # Increase axis tick label size
+plot.title = element_text(size = 18, hjust = 0.5),  # Increase title size and center it
+axis.title.y = element_text(size = 16, margin = margin(r = 20)), 
+axis.title.x = element_text(size = 16, margin = margin(t = 20)),  # Increase space between x axis title and ticks
+strip.text = element_text(size = 14))
 
 plot_riverdist
 
+?legend.title
 
 #boxplot ----
 boxplot_water<- ggplot(data = water, aes(x = presence_type, y = density, fill = presence_type)) +
