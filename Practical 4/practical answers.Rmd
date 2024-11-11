@@ -81,3 +81,190 @@ shapiro.test(t.data$fam)
 # if significant means not normal
 ```
 ## 3.2 Transformations
+FAM is neither count nor a proportion, so a GLM is unlikely to provide a solution. iNSTEAD SHOULD TRANSFORM THE data,. A common transformation to make right-skewed data such as these more symmetrical is the log transformation:
+```{r}
+par(mfrow=c(1,2))
+t.data$log.fam <- log10(t.data$fam) 
+hist(t.data$log.fam, main = NULL) 
+qqnorm(t.data$log.fam, main = NULL) 
+qqline(t.data$log.fam)
+```
+Looks much better, The Shapiro test still rejects the null hypothesis that the data is normal. But would not worry about this.
+```{r}
+shapiro.test(t.data$log.fam)
+```
+
+### Excercise 3
+Use the boxcox() function that is part of the MASS package to apply a Box-Cox transformation to fam and find the value of λ that brings it closest to normality. Use this value of λ to transform the data and compare the result to that provided by the log-transformation.
+```{r}
+library(MASS)
+?boxcox
+lm.fam<- lm(fam~status, data= t.data)
+boxcox.fam<- boxcox(lm.fam)
+summary(boxcox.fam)
+
+```
+
+## 3.3 Testinf for difference in FAM between dominant and subordinate females.
+If happy with log transofrmation, can now test if there is a difference in log.fam between dominant and subordinate females:
+```{r}
+m <- lm(log.fam ~ status, data=t.data) 
+summary(m)
+
+```
+### Excercise 4
+Compare this result to that provided in the Electronic Supplementary Material (ESM). Did the authors find the same result?
+
+Yes, they report a p value of 0.009 but they dont explicitly mention that the data is log transformed. 
+
+
+Although this reveals significantly lower values of log.fam in subordinate females, these estimates are on a log10 scale, and we have to back-transform them to get the predicted means for both groups of females: 
+The predicted FAM concentration for a dominant female (the intercept) is 101.93=84.67 and for a subordinate female it would be 101.93+−0.27 =45.22.
+
+We can extract the coefficients from our model:
+```{r}
+b.intercept <- m$coefficients[1]
+b.status <- m$coefficients[2]
+10^b.intercept #dominant females
+10^(b.intercept+b.status) # subordinate females
+```
+### Exercise 5
+How do these predictions compare to the means reported in the ESM (and those provided by aggregate(t.data$fam, by=list(t.data$status), mean)? Do you understand why they are not the same?
+```{r}
+aggregate(t.data$fam, by=list(t.data$status), mean)
+```
+Rather than transforming FAM, we could also have used a non-parametric Wilcoxon test to compare the two groups:
+```{r}
+wilcox.test(fam ~ status, data=t.data)
+```
+
+### Excercise 6
+Repeat the Wilcoxon test, but now use log.fam rather than fam. Does this give different results? Why? Why not?
+```{r}
+wilcox.test(log.fam ~ status, data=t.data)
+```
+# 4 Variation in parasite burden
+
+Now that we have established that dominant females have higher levels of FAM, and presumable higher levels of circulating T, we are ready to explore the consequences this may have for their parasite burden. Although our explanatory variables do not need to be normally distributed, the authors have chosen to use log-transformed FAM for all their analyses. This is not an uncommon thing to do when it comes to concentrations. To make our results directly comparable to theirs, we will therefore do the same. However, try to forget about this log-transformation of FAM for what is to come.
+
+Our main goal is to test if there is an effect of log.fam on parasite species richness (psr). However, there are many other variables potentially contributing to variation in psr, such as status, rainfall, weight, pregnant and group.size.
+
+Because psr is a count of the number of parasites found in a female (or rather in her faeces), the authors have chosen to use a generalised linear model with a Poisson error distribution and a log link function.
+
+## 4.1 Model simplification
+Start with a null model, include all predictors
+```{r}
+m.full <- glm(psr ~ log.fam + rainfall + weight + pregnant + group.size + status, data=t.data, family=poisson(link=log))
+#Note that link=log is the default for family=poisson, so we don’t have to specify this (but there is no harm in doing so).
+summary(m.full)
+```
+
+First need to check for overdispersion. Check that residual deviance (ie deviance not explained by the model) is smaller than the residual degrees of freedom (ie. sample size minus the number of parameter estimates, 55-7 = 48). So we dont need to worry about overdispersion.
+
+p value in summary() to a GLM are only approximate. To fromally test and predictors are significant, need to drop them from the model one-by-one, and compare a model without that term to the full. Very laborious and we didnt include interactions!
+
+Useful function allows us to remove or include specific terms : update(). fit a model without weight:
+```{r}
+summary(m.reduced.1 <- update(m.full, . ~ . - weight))
+```
+
+Because the difference in the residual deviance between the two models is approximately Chi-square distributed, we can compare m.reduced.1 to m.full using a Chi-square test (and not an F-test as we did before) with anova() and ask if the removal of weight has made the model significantly worse:
+```{r}
+anova(m.reduced.1, m.full, test = "Chisq")
+```
+As expected from a simpler model, m.reduced.1 explains a little bit less variation in psr (the deviance has increased slightly). However, this reduction is not statistically significant (p=0.895). In other words, we can remove weight from our model without making the model significantly worse.
+
+Alternatively we could compare the AIC values for both models:
+```{r}
+AIC(m.full, m.reduced.1)
+```
+As lower AIC values are better, m.reduced.1 again comes out on top. However, remember that although this tells us that of the two models, m.reduced.1 is the better one, this may still be a bad model.
+
+To test the significance of all predictors, we would have to repeat all of the steps above for each one of them. 
+
+Conveniently we can speed this up a bit by using the drop1() function. Applying this function to m.full will one-by-one drop a term from our model and test whether this resulted in a significantly worse fit. It will also provide the AIC for each of these reduced models. Remember that because we are comparing GLMs, we need to specify test='Chisq':
+```{r}
+drop1(m.full, test="Chisq")
+```
+If we have a good a-priori reason for including all of these predictors, the fact that some of them turn out to be non-significant is an interesting result and we could stop here. However, sometimes we would like to have the minimal adequate model, i.e. the model that is simpler and explains less variation than the full model, but not significantly so.
+
+### Excercise 7
+Use backward elimination to arrive at the minimal adequate model.
+
+```{r}
+minimal_model <- step(m.full, direction = "backward")
+summary(minimal_model)
+```
+Backward elimination has left us with a model that contains log.fam but not status. However, in 3.3 we had found an effect of status on log.fam. In other words, both effect are correlated, or collinear. Indeed, if we fit a model that includes only status, we find a highly significant difference in psr between subordinate and dominant females:
+```{r}
+summary(glm(psr ~ status, data=t.data, family=poisson))
+```
+
+However, during backward elimination, status is dropped because when included together with log.fam it is (just) not significant:
+```{r}
+drop1(glm(psr ~ log.fam + status, data=t.data, family=poisson(link=log)), test="Chisq")
+```
+
+This suggests that although there is a difference in psr between subordinate and dominant females, much of this difference is accounted for by the difference in log.fam between the two groups. In line with this, including log.fam reduces the parameter estimate for status from -0.49 to -0.31. Furthermore, when we compare the AIC value of a model that includes only status to a model that includes only log.fam, we find that the latter has a lower AIC:
+```{r}
+m.status <- glm(psr ~ status, data=t.data, family=poisson) 
+m.log.fam <- glm(psr ~ log.fam, data=t.data, family=poisson) 
+AIC(m.status, m.log.fam)
+summary(m.log.fam)
+anova(m.log.fam, test = "Chisq")
+```
+
+Look at diagnostic plots:
+```{r}
+par(mfrow=c(2,2))
+plot(m.log.fam)
+```
+
+
+## 4.2 Plotting effect of FAM on PSR
+
+Having established that there is a relationship between fam and prs, we need to give the reader an idea of the direction and strength of the relationship. This is particularly important when it comes to generalised linear models, as the parameter estimates are difficult to interpret. To this end, we would like to make a plot that is similar to Figure 1 in Smyth et al..
+
+In a first step, we need to obtain the predicted prs for all values of log.fam on the transformed (i.e. log) scale. Note that these estimates are on a log-scale not because we log-transformed FAM, but because we specified family=poisson(link=log). We can do this by extracting the parameter estimates from m.log.fam:
+
+```{r}
+m.log.fam$coefficients
+b0 <- m.log.fam$coefficients[1] 
+b1 <- m.log.fam$coefficients[2]
+# now use to predict prs for each value of log.fam
+log.psr.predicted <- b0 + t.data$log.fam*b1
+```
+
+These predictions are on the log scale. so need to transform them
+```{r}
+psr.predicted <- exp(log.psr.predicted)
+# or can do it in the predict() function
+psr.predicted <- predict(m.log.fam, type='response')
+```
+
+Now we are ready to create our plot. Because we would like to plot the data for dominant and subordinate females separately, we start with a plot using all data but without any symbols. This is a trick to get the scaling of the axes right. We then go on to add the data points for the dominants and subordinates, the regression line, and a legend:
+```{r}
+plot(psr ~ log.fam, data=t.data, pch=NA, xlab="log(FAM)", ylab="parasite species richness")
+points(psr ~ log.fam, data=t.data[t.data$status=="S", ], pch=19, col="grey70") points(psr ~ log.fam, data=t.data[t.data$status=="D", ], pch=19, col="grey30")
+lines(psr.predicted ~ t.data$log.fam)
+legend(x="topleft", legend=c("D", "S"), pch=19, lty = 1, col=c("grey30", "grey70"), title="social status", cex=0.7)
+```
+
+That doesn’t look very good, but it becomes clear what the problem is when we look at what we are trying to plot:
+```{r}
+head(cbind(psr.predicted, t.data$log.fam))
+```
+The line we are plotting connects each of these points one-by-one, so to create a single continuous line we need to sort both columns by the variable on the x-axis (t.data$log.fam):
+```{r}
+plot(psr ~ log.fam, data=t.data, pch=NA, xlab="log(FAM)", ylab="parasite species richness")
+points(psr ~ log.fam, data=t.data[t.data$status=="S", ], pch=19, col="grey70") points(psr ~ log.fam, data=t.data[t.data$status=="D", ], pch=19, col="grey30")
+lines(psr.predicted[order(t.data$log.fam)] ~ sort(t.data$log.fam))
+legend(x="topleft", legend=c("D", "S"), pch=19, lty = 1, col=c("grey30", "grey70"), title="social status", cex=0.7)
+```
+### Excercise 10
+If anything, our data showed signs of underdispersion, i.e. the variance in psr is smaller than expected if psr follows a Poisson distribution. If we wanted to account for underdispersion, how would we do this? Would this change our results?
+
+One way could maybe be to use a quasipoisson or negative binomial distribution.This might slightly change the results. then you could compare the results using an f test.
+
+
+# 5 Explaining variation in parasite presence
