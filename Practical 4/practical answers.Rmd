@@ -37,6 +37,47 @@ length(unique(t.data$group.size))
 # 20 groups of different sizes. 
 length(unique(t.data$individual))
 # 37 individuals
-length(unique(t.data$status)
+table(unique(t.data$status))
+#  D  S 
+# 17 38 
+# might be repetitions of individuals
+
+dominance<- t.data[!duplicated(t.data$individual), ]
+table(dominance$status)
+       
 ```
 
+## 2.3 Parasite abundance and richness
+Abundance of each of the parasites is scored on a scale from 0 to 4. Trying to plot the distribution of discrete count data using hist() often doesn’t works so well. For example, let’s visualise the parasite abundance for strong using hist():
+```{r}
+hist(t.data$strong)
+# using a table instead
+table.strong <- table(t.data$strong)
+barplot(table.strong, xlab="number of eggs", ylab="frequency",
+main = "Strongylates",
+names.arg=c("0", "1", "2-7", "7-20", ">20"))
+```
+### Excercise 2
+Discuss the pros and cons of the authors’ measure of parasite abundance. And do you think it is appropriate to analyse this with a GLM with Poisson errors?
+
+The bins are not representing equal numbers of eggs. It seems to skew the data a bit. It does help in condensing the really large values, which may reduce the number of outliers. 
+
+Parasite species richness (PSR) obtained by counting parasite taxa.
+
+# 3 Variation in faecal androgen metabolites (FAM)
+
+Rather than measuring the level of T in the blood, the authors measured the amount of androgen metabolites in faecal samples (FAM). Before we start looking at its relationship with parasite presence, diversity and abundance, we should have a closer look at FAM itself. Do we find that dominant females have higher levels of FAM?
+
+## 3.1 cHECK FOR NORMALITY
+```{r}
+par(mfrow=c(1,2)) 
+hist(t.data$fam, main=NULL) 
+qqnorm(t.data$fam, main = NULL) 
+qqline(t.data$fam)
+```
+Is not normal, can check with Shapiro test
+```{r}
+shapiro.test(t.data$fam)
+# if significant means not normal
+```
+## 3.2 Transformations
