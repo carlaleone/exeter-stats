@@ -1,0 +1,42 @@
+---
+title: "Practical 4 Answers"
+output: html_document
+date: "2024-11-11"
+---
+# Introduction
+In many species, testosterone (T) levels are positively correlated with male reproductive success. For example, males with high levels of T may be larger, more aggressive and develop more elaborate secondary sexual characters. As a consequence, they will be more successful in male-male competition, and more attractive to females. However, if there are such obvious benefits to high T levels, why do we still see substantial variation among individuals? One appealing and often hypothesised explanation for the maintenance of variation in T, and in fitness-related traits in general, is that there are not only benefits, but also downsides to high T levels, i.e. there are trade-offs. For example, T may have immunosuppressant effects and increase an individual’s susceptibility to parasites.
+
+Despite a substantial body of work on the role of androgens in mediating a trade-off between reproductive success and health in males, Smyth et al. (2016) set out to investigate its role in female meerkats (Suricata suricatta), a cooperatively breeding species. In this species, dominant females have significantly higher levels of androgens than subordinates. Although dominant females have a dramatically higher reproductive success, do they suffer from higher levels of parasitism?
+
+# 2 Getting Started
+```{r}
+getwd()
+setwd("/Users/carlaleone/Desktop/Exeter/Practical 4")
+t.data <- read.table("Dataset.csv", header=TRUE, sep = ",",
+                      stringsAsFactors = FALSE)
+View(t.data)
+
+#changing colnames
+colnames(t.data)[11:16] <- c("strong", "toxo", "oxy", "pseuda", "spiru", "cocci") 
+colnames(t.data)
+```
+## 2.2 Descriptive stats
+Getting number of observations per individuals
+```{r}
+table(t.data$individual)
+
+# also want to know how many individuals have been included how many times:
+counts.id <- table(t.data$individual)
+table(counts.id)
+```
+
+### Excercise 1
+Confirm the sample sizes provided in section 2a of the paper (‘Study site and subjects’) using length(), table() and unique(). The latter removes any duplicates from a vector or data frame.
+```{r}
+length(unique(t.data$group.size))
+# 20 groups of different sizes. 
+length(unique(t.data$individual))
+# 37 individuals
+length(unique(t.data$status)
+```
+
