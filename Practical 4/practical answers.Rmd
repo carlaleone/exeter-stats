@@ -103,6 +103,20 @@ lm.fam<- lm(fam~status, data= t.data)
 boxcox.fam<- boxcox(lm.fam)
 summary(boxcox.fam)
 
+# CORRECT ANSWER
+library(MASS)
+bc <- boxcox(lm(t.data$fam ~ 1), plotit = FALSE)
+lambda <- bc$x[which.max(bc$y)]
+lambda
+#0.3 
+t.data$bc.fam <- (t.data$fam^lambda - 1) / lambda # APPLY this tranformation using lambda to each number of fam
+# plot
+par(mfrow=c(1,2))
+hist(t.data$bc.fam)
+qqnorm(t.data$bc.fam)
+qqline(t.data$bc.fam)
+shapiro.test(t.data$bc.fam)
+
 ```
 
 ## 3.3 Testinf for difference in FAM between dominant and subordinate females.
@@ -130,6 +144,8 @@ b.status <- m$coefficients[2]
 ```
 ### Exercise 5
 How do these predictions compare to the means reported in the ESM (and those provided by aggregate(t.data$fam, by=list(t.data$status), mean)? Do you understand why they are not the same?
+
+The authors have much larger means. They first took means, then the log of the mean. we first logged all values, then took the mean, then back transformed. So we end up with different results. Is the Jensen's inequality phenomenon. Importantly, the predictions from a GLM with a log-link don't suffer from this problem, providing another reason why fitting models to log-transformed data should be avoided whenever possible.
 ```{r}
 aggregate(t.data$fam, by=list(t.data$status), mean)
 ```
@@ -257,7 +273,8 @@ head(cbind(psr.predicted, t.data$log.fam))
 The line we are plotting connects each of these points one-by-one, so to create a single continuous line we need to sort both columns by the variable on the x-axis (t.data$log.fam):
 ```{r}
 plot(psr ~ log.fam, data=t.data, pch=NA, xlab="log(FAM)", ylab="parasite species richness")
-points(psr ~ log.fam, data=t.data[t.data$status=="S", ], pch=19, col="grey70") points(psr ~ log.fam, data=t.data[t.data$status=="D", ], pch=19, col="grey30")
+points(psr ~ log.fam, data=t.data[t.data$status=="S", ], pch=19, col="grey70") 
+points(psr ~ log.fam, data=t.data[t.data$status=="D", ], pch=19, col="grey30")
 lines(psr.predicted[order(t.data$log.fam)] ~ sort(t.data$log.fam))
 legend(x="topleft", legend=c("D", "S"), pch=19, lty = 1, col=c("grey30", "grey70"), title="social status", cex=0.7)
 ```
@@ -268,3 +285,181 @@ One way could maybe be to use a quasipoisson or negative binomial distribution.T
 
 
 # 5 Explaining variation in parasite presence
+In addition to analysing the number of parasite species present (psr), the authors also test for an effect of log.fam on the probability that a certain species is present. To this end, they fit a series of binomial models. Here we will focus on one of the parasite species, Oxynema suricattae.
+
+You will first need to create a new presence/absence variable that is 0 if O. suricattae is absent, and 1 if it is present:
+
+```{r}
+t.data$oxy.present <- ifelse(t.data$oxy==0, 0, 1)
+```
+
+## 5.1 Model simplification
+We start by fitting a full model, similar to m.full, but this time using family=binomial and link=logit:
+```{r}
+m.full.oxy <- glm(oxy.present ~ log.fam + rainfall + weight + pregnant + group.size + status, data=t.data, family=binomial(link=logit))
+
+summary(m.full.oxy)
+# cant detect overdispersion in binary traits, so no need to check for it.
+```
+Now can use backward elimination to arrive at the minimal adequate model. After each drop() you see which one is least significant and then drop that one in the next backward elimination. Keep until only significant terms.
+```{r}
+drop1(m.full.oxy, test="Chisq")
+m.reduced.oxy.1<- update(m.full.oxy, . ~ . - group.size)
+drop1(m.reduced.oxy.1, test="Chisq")
+
+# next reduction ranifall
+m.reduced.oxy.2 <- update(m.reduced.oxy.1, . ~ . - rainfall) 
+drop1(m.reduced.oxy.2, test="Chisq")
+
+# next reduction pregnant
+m.reduced.oxy.3 <- update(m.reduced.oxy.2, . ~ . - pregnant) 
+drop1(m.reduced.oxy.3, test="Chisq")
+
+# next reduction weight 
+m.reduced.oxy.4 <- update(m.reduced.oxy.3, . ~ . - weight) 
+drop1(m.reduced.oxy.4, test="Chisq")
+
+# mam model
+mam.oxy <- m.reduced.oxy.4 
+summary(mam.oxy)
+```
+We can test if the effect of log.fam differs between dominant and subordinate females by including the interaction using update(), and comparing this model to mam.oxy. This reveals no evidence for such a difference:
+```{r}
+m.oxy.int <- update(mam.oxy, . ~ . + log.fam:status)  #updating model and adding the interaction term
+anova(m.oxy.int, mam.oxy, test="Chisq") #comparing mam model with vs mam model without interaction
+# Not a significant difference between the models, so makes more sense to use the simpler model. more degrees of freedom.
+```
+## 5.2 From parameter estimates to probabilities
+Let’s have a closer look at summary(mam.oxy):
+```{r}
+summary(mam.oxy)
+```
+What is the probability that a dominant female with average FAM levels (averaged across all females) is infected? And what about a subordinate female? On a logit scale, these probabilities are:
+```{r}
+b0 <- mam.oxy$coefficients[1] # intercept 
+b1 <- mam.oxy$coefficients[2] # log.fam
+b2 <- mam.oxy$coefficients[3] # status 
+mean.log.fam <- mean(t.data$log.fam)
+logit.p.dominant <- b0 + mean.log.fam*b1 
+logit.p.subordinate <- b0 + mean.log.fam*b1 + b2 
+logit.p.dominant
+# 1.768606
+logit.p.subordinate
+# 0.05909846 
+```
+
+We can now back-transform logit.p.dominant and logit.p.subordinate to obtain the probabilities of being infected for both groups of females:
+```{r}
+1/(1+exp(-logit.p.dominant)) # dominant
+# 0.8542842
+
+1/(1+exp(-logit.p.subordinate)) # subordinate
+# 0.5147703 
+
+```
+
+We can use a similar approach to predict infection probabilities for the full range of log.fam for both groups, but we could also use predict() to obtain predictions on the original scale for both groups of females:
+```{r}
+p.predicted <- predict(mam.oxy, type='response') 
+p.predicted.d <- p.predicted[t.data$status=="D"] 
+p.predicted.s <- p.predicted[t.data$status=="S"]
+```
+
+## 5.3 Plotting logistic regression
+Now we can use these predictions to create a plot that illustrates the results of the regression of oxy.present against log.fam for both types of females:
+```{r}
+plot(oxy.present ~ log.fam, data=t.data, pch=NA, xlab="log(FAM)", ylab="proportion infected")
+points(oxy.present ~ log.fam, data=t.data[t.data$status=="S", ], pch=19, col="grey70") points(oxy.present ~ log.fam, data=t.data[t.data$status=="D", ], pch=19, col="grey30")
+
+lines(p.predicted.s[order(t.data$log.fam[t.data$status=="S"])] ~ sort(t.data$log.fam[t.data$status=="S"]), lwd=1.5, col="grey70")
+
+lines(p.predicted.d[order(t.data$log.fam[t.data$status=="D"])] ~ sort(t.data$log.fam[t.data$status=="D"]), lwd=1.5, col="grey30")
+
+legend(x="topleft", legend=c("D", "S"), pch=19,
+col=c("grey30", "grey70"), lwd=c(1,1), title="social status", cex=0.8)
+```
+
+### Excercise 11 
+Especially for lower values of log.fam, the regression line for subordinates doesn’t look very smooth. Why not? Would you be able to improve this?
+
+answer:
+This is because we have predicted psr for all observed values of log.fam, and we have very few predictions for the lower range. To obtain a smoother line, we could make predictions for a series of values of fam that cover these gaps: 
+```{r}
+newdata.d <- data.frame(status=rep("D", 100),
++                         log.fam=seq(min(t.data$log.fam[t.data$status=="D"]),
++                                     max(t.data$log.fam[t.data$status=="D"]),
++                                                  length.out=100))
+
+newdata.s <- data.frame(status=rep("S", 100),
++                         log.fam=seq(min(t.data$log.fam[t.data$status=="S"]),
++                                     max(t.data$log.fam[t.data$status=="S"]),
++                                                  length.out=100))
+
+p.predicted.d <- predict(mam.oxy, newdata.d, type='response')
+p.predicted.s <- predict(mam.oxy, newdata.s, type='response')
+
+par(mfrow=c(1,1))
+plot(oxy.present ~ log.fam, data=t.data, pch=NA,
++      xlab="log(FAM)", ylab="proportion infected")
+points(oxy.present ~ log.fam, data=t.data[t.data$status=="S", ], pch=19, col="grey70")
+points(oxy.present ~ log.fam, data=t.data[t.data$status=="D", ], pch=19, col="grey30")
+
+lines(p.predicted.s[order(newdata.s$log.fam)] ~
++         sort(newdata.s$log.fam), lwd=1.5, col="grey70")
+lines(p.predicted.d[order(newdata.d$log.fam)] ~
++         sort(newdata.d$log.fam), lwd=1.5, col="grey30")
+```
+
+
+# 6 Is parasite species richness (PSR) a count or a proportion?
+
+In the above analyses, both we and the authors of the paper have treated psr as count data, and we therefore assumed a Poisson error distribution. However, is this really appropriate? When counting species in a certain time, space or volume, we usually know which species are there, but we don’t know all the species that aren’t there. In this case, however, we would seem to know exactly which of the the six possible species are present, and which ones are absent. So could we instead analyse psr as a proportion?
+
+### Excercise 12 
+What do you think, should we treat psr as a proportion? What speaks for it? And what speaks against it?
+Similar to the reasoning given above, I think it should be considered a proportion. In other count data scenarios, the main problem with analysing it is that we cannot account for the events that are not occuring. However, here we know which bacteria the individuals could have, and they will have been tested for all of them. Therefore, the values are more accurately described as a proportion. 
+A downside may be that it is not as comparable with other populations as you are relying only on the known species of bacteria. The proportions will be specific to this study.
+
+ANSWER: also depends on their methods. would it have allowed them to find more than 6 parasites? If yes, then count, if no, then proportion.
+
+Check the data for which is best. Fit a model similar to m.log.fam, but using family=binomial(link=logit).To specify our dependent variable, the proportion of species observed, we need to provide the number of species we have observed (psr) and the number we did not observe (6-psr), and combine both dependent variables using cbind():
+```{r}
+m.log.fam.prop <- glm(cbind(psr, 6-psr) ~ log.fam, data=t.data, family=binomial(link=logit))
+
+summary(m.log.fam.prop)
+
+# why still using binomial family? because it is a proportion so can only go between 1 and 0.
+```
+
+Again we find a highly significant and positive effect of log.fam on psr. Furthermore, it is worth noting that whereas the Poisson model was underdispersed, the residual deviance of our binomial model (60.754) is similar to the residual degrees of freedom (53).
+
+We can also compare the AIC values of both models:
+```{r}
+# comparing model with count vs proportion
+AIC(m.log.fam, m.log.fam.prop)
+```
+
+This reveals that of the two models, the model treating psr as a proportion is a better fit to the data.
+However, because the parameter estimate is on the logit scale this time, we can’t compare it directly to the estimate provided by m.log.fam. To compare the models further, we should therefore use m.log.fam.prop to predict psr for all values of log.fam. Just like we did above, we first calculate our predictions on the transformed (i.e. logit) scale and transform these to the data scale:
+```{r}
+b0 <- m.log.fam.prop$coefficients[1]
+b1 <- m.log.fam.prop$coefficients[2] 
+logit.psr.predicted <- b0 + b1*t.data$log.fam 
+psr.predicted.2 <- 1/(1+exp(-logit.psr.predicted))
+```
+
+We can create a similar plot as we did in 4.2, but this time of the proportion of parasites observed against log.fam:
+```{r}
+plot(psr/6 ~ log.fam, data=t.data, pch=NA, xlab="log(FAM)", ylab="parasite species richness")
+
+points(psr/6 ~ log.fam, data=t.data[t.data$status=="S", ], pch=19, col="grey70") points(psr/6 ~ log.fam, data=t.data[t.data$status=="D", ], pch=19, col="grey30")
+
+lines(psr.predicted.2[order(t.data$fam)] ~ sort(t.data$log.fam))
+
+legend(x="topleft", legend=c("D", "S"), pch=19,
+col=c("grey30", "grey70"), title="social status", cex=0.8)
+```
+### Excercise 13
+Compare this figure to that obtained in 4.2. What are the main differences? Which one do you think provides a better representation of the effect of FAM on PSR?
+
+ANSWER: Whereas a Poisson model predicts an exponential increase in psr with increasing values of log.fam, in a binomial model psr will approach 6 (i.e. all six species present), but it will never go over it.
