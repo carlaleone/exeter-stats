@@ -1,0 +1,207 @@
+---
+title: "tutorial 1"
+output: html_document
+date: "2024-11-12"
+---
+# Part 1
+
+Set wd and load packages
+```{r}
+getwd()
+setwd("/Users/carlaleone/Desktop/Exeter/GIS/Week 8/Tutorial 1")
+
+#packages
+library(sf)
+install.packages("tidyverse")
+library(tidyverse)
+```
+
+Read data
+```{r}
+sightings<- st_read("data/sightings.gpkg")
+sightings
+# simple feature collection
+# point features
+# projected coordinates on british national grid
+
+class(sightings)
+# spatial data frame
+# 3 attributes: space, species, date, geom (coordinates of point features)
+```
+
+SF objects are a data frame. so all r data frame functions will work:
+```{r}
+nrow(sightings)
+sightings[1:3,]
+unique(sightings$species)
+# 3 species
+# just seals
+subset(sightings, species == "Grey seal")
+
+# new column name of vessel
+sightings$vessel<- "Free spirit"
+sightings
+```
+
+## Plot the data
+```{r}
+plot(sightings)
+# limited function instead use ggplot2
+```
+Using ggplot2. Use geom_sf() for plotting sf data:
+```{r}
+ggplot() + 
+  geom_sf(data= sightings)
+```
+Plotted on default ggplot2 canvas. Adds a spatial coordinate system to it which locks the aspect ratio. plotting region changes shape, and geometries are not distorted. 
+
+Data is projected onto lat and long axes.
+
+Now add more data, to put sightings into geographic context:
+```{r}
+# load more data
+land <- st_read("data/falmouth_bay.shp")
+trip<- st_read("data/boat_trip.gpkg")
+
+land #single multiploygon feature
+trip # single line feature
+
+``` 
+
+Add spatial data to the plot:
+```{r}
+ggplot()+
+  geom_sf(data=land) +
+  geom_sf(data= trip) +
+  geom_sf(data = sightings)
+```
+Now to continue styling... 6 main styling features, set inside the geom_sf() layer you want to adjust.
+```{r}
+# all colours and shapes in the tutorial worksheet
+# alpha makes more transparent
+ggplot()+
+  geom_sf(data=land, fill = "lemonchiffon3",) +
+  geom_sf(data= trip, linetype = "dashed") +
+  geom_sf(data = sightings, fill = "tomato3", shape = 21, colour = "black", size = 2)
+```
+All this styling has affected all the features in a layer. But sometimes we want styling to be conditional on a certain element of the layer (eg colour points differently for different species). In ggplot this is done in the mapping argument in the geom_sf:
+'mapping' wants a series of statements on how the variables in your data map to one of the aesthetic properties. Each statement needs to be wrapped in an aes().
+```{r}
+sightings_plot<- ggplot()+
+  geom_sf(data=land, fill = "lemonchiffon3",) +
+  geom_sf(data= trip, linetype = "dashed") +
+  geom_sf(data = sightings, mapping = aes (colour = species, size = N) )
+
+sightings_plot
+```
+Now to do some manual changes:
+```{r}
+# setting scale
+# first make a palette
+pal<- c("Grey seal" = "red",
+        "Common dolphin" = "blue",
+        "Harbour porpoise" = "green")
+
+# add manual colour scale to the sightings plot
+sightings_plot + scale_colour_manual(values = pal)
+# could also do scale_fill_manual or scale_shape_manual
+
+```
+Plot the data for each species in a different panel using facet():
+```{r}
+sightings_plot + scale_colour_manual(values = pal) +
+  facet_wrap(~ species)
+```
+# Part 2: data not already in a spatial format
+
+Read in the data sightings 2
+```{r}
+sightings2<- read.csv("data/sightings2.csv")
+sightings2
+# columns with long and lat
+
+```
+To do any spatial operations or combine with other spatial data, we need to convert to an sf object:
+```{r}
+sightings2<- st_as_sf(sightings2,coords = c("lon", "lat"), # need to give the x and y coordinates of the csv
+         crs = 4326) #need to give it the coordinate reference system through the epsg code
+#Can find epsg code through the epsg website
+sightings2
+
+#load the track log for second trip
+trip2<- st_read("data/boat_trip2.gpkg")
+```
+
+Now add this trip to the earlier plot:
+```{r}
+sightings_plot +
+  geom_sf( data = trip2)+
+  geom_sf(data = sightings2,mapping = aes (colour = species, size = N) )
+```
+Currently, our data for both trips are in two different data frames. Ideally, they would be combined into one file:
+```{r}
+# make sure crs is the same
+sightings # crs is in BNG
+sightings2 # WGS 84
+
+#Need to transform an object and give the crs epsg code that you want it transformed to. In this case we want sightings2 in the british national grid to mathc sightings 1:
+sightings2<- st_transform (sightings2, crs = st_crs(sightings))
+sightings2
+
+#now merge into single spatial data frame by binding dfs together using the rbind command
+rbind(sightings, sightings2)
+# number columns not the same error. Sightings2 doesnt have the vessel column from earlier:
+sightings2$vessel<- "Free spirit"
+
+# also geom columns dont have the same names:
+st_geometry(sightings2)<- "geom"
+names(sightings2)
+
+# run again
+sightings<- rbind(sightings, sightings2)
+
+# run for boat trips
+trips<-rbind(trip, trip2)
+```
+Geometric calculations from new combined data:
+```{r}
+# how far did we travel in both trips?
+st_length(trips)# shows distance traveled in each trip
+
+#add as new column
+trips$distance<- st_length(trips)
+trips
+```
+From map you can see that sightings are at different distances to the shore, might want to calculate the distance from closest point on the land polygon. Use st_dist:
+```{r}
+st_distance (sightings, land) #matrix measuring for each point to each land layer point
+
+# extract 
+st_distance (sightings, land)[,1] # all distances
+
+# make a new column
+sightings$shore_distance<- st_distance (sightings, land)[,1] 
+sightings
+#distance gives units, but easier if numeric
+sightings$shore_distance<- as.numeric(st_distance (sightings, land)[,1] )
+sightings
+
+#could calculate areas
+st_area(land)
+# 524 km^2
+```
+
+# Part 3, combining spatial analysis into one workflow
+
+Plot how distance of sightings from shore varies for different species. Use ggplot2:
+```{r}
+ggplot()+
+  geom_density(sightings, mapping = aes(x = shore_distance, fill =species), alpha = 0.5)
+```
+
+Final step to export the combined sightings and track data:
+```{r}
+st_write(sightings, dsn = "merged_tracks.gpkg", layer = "sightings")
+st_write(trips, dsn = "merged_trips.gpkg", layer = "trips")
+```
+
