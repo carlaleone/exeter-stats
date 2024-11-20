@@ -1,0 +1,22 @@
+---
+title: "Tutorial 4 Notes"
+output: html_document
+date: "2024-11-20"
+---
+# Introduction: Multi-dimensional rasters
+These are raster datasets that consist of multiple layers or bands.
+Here we use open source satellite data to map the seasonal position of the Gulf Stream one of the major current systems in the Atlantic Ocean. The Gulf Stream plays a pivotal role in regulating the regional climate system in the North Atlantic,transporting warm water from the Gulf of Mexico up the eastern seaboard of the United States and towards Western Europe. It also acts as a migration corridor and generates productive foraging areas for many large and pelagic species. The gulf stream may be weakening.
+
+Our task: create a surface temperature and current map.
+
+Getting started:
+```{r}
+setwd("/Users/carlaleone/Desktop/Exeter/GIS/Week 9/Tutorial 4")
+
+library(lubridate)
+library(tidyverse)
+library(terra)
+library(tidyterra)
+library(colorspace)
+```
+
