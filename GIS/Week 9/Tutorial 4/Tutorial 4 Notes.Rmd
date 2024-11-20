@@ -4,7 +4,9 @@ output: html_document
 date: "2024-11-20"
 ---
 # Introduction: Multi-dimensional rasters
-These are raster datasets that consist of multiple layers or bands.
+These are raster datasets that consist of multiple layers or bands. Each layer has the same dimensions and resolution, so they can be stacked on one another. The layers can be different variables or the same variable measured at different points in time, or different depths.
+Each layer is a slice through a continuous variable like time or depth. So can be thought of as a 3D Raster. Has x and y dimensions and a z dimension. 
+
 Here we use open source satellite data to map the seasonal position of the Gulf Stream one of the major current systems in the Atlantic Ocean. The Gulf Stream plays a pivotal role in regulating the regional climate system in the North Atlantic,transporting warm water from the Gulf of Mexico up the eastern seaboard of the United States and towards Western Europe. It also acts as a migration corridor and generates productive foraging areas for many large and pelagic species. The gulf stream may be weakening.
 
 Our task: create a surface temperature and current map.
@@ -18,5 +20,107 @@ library(tidyverse)
 library(terra)
 library(tidyterra)
 library(colorspace)
+```
+
+# Getting started
+Load some data from copernicus. Is sst data, common for these satellite datas.
+```{r}
+sst<- rast("data/sst.nc")
+sst
+#Raster stacks are similar to a list, and we can extract layers using []
+sst[2:4]
+```
+
+Sea surface temperature for each layer;
+```{r}
+global(sst, fun = "mean", na.rm = T)
+# daily average sst
+# could use to plot the seasonal trend in sst
+
+```
+We are interested in sst variation spatially. For this we use local statistics (cell by cell operations). Calculate a new value for each cell and create a new layer.
+# Calculate mean SST
+```{r}
+mean_sst<- app(sst, fun = 'mean', na.rm = T)
+mean_sst # single raster layer
+plot(mean_sst)
+
+sst_plot<- ggplot() +
+  geom_spatraster(data = mean_sst) +
+  scale_fill_whitebox_c("bl_yl_rd", na.value = "grey50") # NA values here are land, but we want to keep them
+```
+
+Above, we have calculated the annual mean value of sst across the whole stack. What if we want to calculate the average temperature by month to map seasonal position of the gulf stream?
+Use grouped local statistic. 
+First we need to give each layer an index by which to groups them. when we apply the function, any layer that shares an index will be grouped.
+
+```{r}
+# create indices so that layers in the same month have the same index.
+time(sst) #extract the dates for layers
+months<- month(time(sst), label = T) # extract the month, which will be the indices.
+
+# use a variant of the app function
+monthly_sst<- tapp(sst, index = months, fun = "mean", na.rm =T)
+monthly_sst
+plot(monthly_sst)
+
+#plot in ggplot
+ggplot() +
+  geom_spatraster(data = monthly_sst) +
+  scale_fill_whitebox_c("bl_yl_rd", na.value = "grey50") +
+  facet_wrap(~lyr) # want one plot for each layer
+  
+```
+
+# Calculate currents
+
+```{r}
+currents<- rast("data/currents.nc")
+# similar to sst data but has two var.names. They come from two different sources. Means that this raster has 2 different raster stacks with the same dimensions and number of layers, but with different variables. Is a raster hypercube.
+
+v<- currents["vo"] #just northward velocity
+u<- currents["uo"] #eastward velocity
+```
+
+Calculate avergae current strength and direction across the study area. First will calculate over the whole year,. 
+```{r}
+mean_v<- app(v, fun = "mean", na.rm=T)
+mean_u<- app(u, fun = "mean", na.rm=T)
+plot(mean_u)
+```
+
+Now we want to convert these into absolute current veolcity and direction using equations from the worksheet.
+We use raster algebra:
+```{r}
+mean_velocity<- sqrt(mean_v^2 + mean_u^2)
+plot(mean_velocity) #absolute current strength in the area
+
+#can also calculate average current direction
+mean_dir<- atan2(mean_v,mean_u)
+plot(mean_dir) #hard to visualize because is circular, measured in radian
+
+```
+Monthly mean current strength and direction
+```{r}
+
+```
+
+
+Plot the gulf stream
+```{r}
+install.packages("metR")
+library(metR)
+
+arrow_data<- c(mean_velocity, mean_dir) %>%
+  setNames(c("velocity", "direction")) %>%
+  as.data.frame(xy=T)
+#now we have values for each cell for each layer in our stack. We also have coordinates
+
+# our current direction is in radians, but we want degrees:
+arrow_data$direction<- (arrow_data$direction * 180/pi) %% 360
+
+# add the arrows onto the sst plot:
+sst_plot + 
+  geom_arrow(data= arrow_data, aes(x = x, y= y, mag = velocity, angle = direction), skip = 5) 
 ```
 
