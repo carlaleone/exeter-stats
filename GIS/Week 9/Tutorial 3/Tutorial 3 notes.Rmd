@@ -175,7 +175,7 @@ expanse(suitable, unit = "km")
 expanse (suitable)/expanse(dem)
 # around 32.8% of habitat in ladakh is suitable
 
-`````````
+```
 # Export new raster
 
 ```{r}
