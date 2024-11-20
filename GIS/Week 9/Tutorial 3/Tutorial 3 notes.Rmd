@@ -1,0 +1,184 @@
+---
+title: "Tutorial 3 Notes"
+output: html_document
+date: "2024-11-20"
+---
+
+Packages:
+```{r}
+library(sf)
+library(tidyverse)
+library(terra)
+install.packages("tidyterra")
+library(tidyterra)
+library(colorspace)
+
+getwd()
+setwd("/Users/carlaleone/Desktop/Exeter/GIS/Week 9/Tutorial 3")
+```
+
+Importing raster data
+```{r}
+dem <- rast("data/dem.tif")
+dem
+
+#other functions:
+ncell(dem) # number of cells
+res(dem) # resolution of the raster
+ext(dem)#spatial extent
+names(dem)
+```
+spat raster = spatial raster. tells us we have ... rows and columns, how many layers, the resolution, spatial extent
+
+# Plot the elevation data
+```{r}
+plot(dem)
+```
+plot(dem) is optimized for raster data, but still lacks versatility of other dedicated plotting packages like ggplot
+
+```{r}
+ggplot()+
+  geom_spatraster(data = dem) #dont need to specify fill aesthetics
+```
+ggplot plots missing values in grey as default. But we want to change the background colour and the gradient. so need to apply a custom fill scale
+
+```{r}
+hcl_palettes(plot=TRUE) #available palettes
+ggplot()+
+  geom_spatraster(data = dem) +
+  scale_fill_continuous_sequential("Terrain 2", na.value = "transparent", rev= FALSE) # colour palette by default is usally reversed, so need to make sure that higher elevation corresponds to less green
+```
+
+For elevation we can use other palettes from hypsometric tints in tidyterra
+```{r}
+dem_plot<- ggplot()+
+  geom_spatraster(data = dem) +
+  scale_fill_hypso_c("wiki-2.0_hypso") #na is automatically transparent
+```
+
+
+# Plot leopard data
+leopards also have a column called sample which specifies if sample was from cam trap or observation
+```{r}
+leopards<- st_read("data/leopards.gpkg")
+ladakh<- st_read("data/ladakh.gpkg")
+
+# plot new
+dem_plot +
+  geom_sf(data=leopards, mapping = aes(colour = sample, shape = sample)) +
+  geom_sf(data = ladakh, fill = "transparent")
+```
+#Summarize elevation
+Summary stats of the new raster layer. use global statistsics
+```{r}
+global(dem, fun = "mean", na.rm = TRUE) 
+#MEAN ELEVALTION = 4846.711	
+
+global(dem, fun = "min", na.rm = TRUE) 
+
+minmax(dem) # gives min and max together
+#range of elevation is 2575 m  to 7181 m
+```
+
+Focal statistics, calculate new value in a cell based on the values of the cells around it. Returns a new raster layer.
+The focal stats we need are already coded, but can check the reading. Common use is terrain analysis:
+ruggedness, slope angle, aspect ... all habitat variables used in the study
+
+# Terrain analysis
+```{r}
+slope<- terrain(dem, v = "slope")
+plot(slope)
+
+ggplot()+
+  geom_spatraster(data = slope) +
+  scale_fill_continuous_sequential("Heat", na.val = "transparent")
+```
+
+Next calculate terrain rugedness:
+```{r}
+TRI<- terrain(dem, v = "TRI")
+
+ggplot()+
+  geom_spatraster(data = TRI) +
+  scale_fill_continuous_sequential("Turku", na.val = "transparent")
+```
+Aspect = direction that slopes face
+```{r}
+aspect<- terrain (dem, v = "aspect")
+ggplot()+
+  geom_spatraster(data = aspect) +
+  scale_fill_continuous_sequential("Sunset", na.val = "transparent")
+```
+Aspect is hard to plot becuase is circular, measured in degrees 0-360. So we may want to split between N,E,S,W
+Use raster classification
+
+#Calssify elevation rasters
+involves grouping cells into defined classes and then relabelling them as something else. in Terra done with the classify function
+```{r}
+classify(dem, rcl = seq(2000, 8000, 1000)) %>% plot #cells between 2000 and 8000 m and classify every 1000 m 
+```
+Need to build a relcassification table, to give the ranges for each class and what we want them relabled as:
+```{r}
+# Build a numeric object how you want your table to look, and then wrap in a matrix
+rcl<- matrix(
+c(0, 45, 1, #north
+  45,135, 2, #east
+  135, 225, 3, #south 
+  225, 315, 4, #west
+  315, 360, 1),
+ncol = 3, byrow = T) #back to north
+
+aspect<- classify(aspect, rcl = rcl)
+plot(aspect)
+
+ggplot()+
+  geom_spatraster(data = aspect) +
+  scale_fill_continuous_sequential("Sunset", na.val = "transparent")
+# now the classes dont have names, but we can give names to the classes through a raster attribute table
+```
+Making an attribute table for the aspect raster. Tner first column needs to be called ID and needs to conatin the vaue in the raster. Our values are 1-4. Then we can add any other columns for how those values map to categorical variables:
+```{r}
+rat<- data.frame(id = 1:4, aspect = c("N", "E", "S", "W"))
+levels(aspect) <- rat
+#levels in aspect are the values in our attribute table
+
+#now our scale is discrete and not continuous, so need to change the scale_fill
+ggplot()+
+  geom_spatraster(data = aspect) +
+  scale_fill_discrete_sequential("Sunset", na.translate = F) #remove na
+```
+# Suitable Habitat
+Authors of the paper reported that suitable habitat for snow leopards was between 2800 and 4600 m. So we can classify all the habitat that is within that elevation range:
+
+Can test whether each cell is lower than 4600  and higher than 2800:
+```{r}
+plot(dem < 4600)
+plot(dem > 2800)
+
+#combine statements
+plot(dem > 2800 & dem < 4600)
+suitable<- dem > 2800 & dem < 4600
+```
+
+Subset the suitable parts and find the area:
+We can do this by just keeping the cells with the values we want and making everything else in the raster to NA
+```{r}
+suitable[suitable == 0] <- NA
+# Any cells in suitable that are 0, should be NA
+plot(suitable)
+
+#now measure the total area 
+expanse(suitable, unit = "km")
+# 20,683 km ^2 of suitable habitat in Ladakh
+
+#calculate proportion of suitable area
+expanse (suitable)/expanse(dem)
+# around 32.8% of habitat in ladakh is suitable
+
+`````````
+# Export new raster
+
+```{r}
+writeRaster(suitable, "suitable_habitat.tif")
+```
+
