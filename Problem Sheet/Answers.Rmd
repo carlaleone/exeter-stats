@@ -3,13 +3,55 @@ title: "Problem Sheet 1"
 output: pdf_document
 date: "2024-10-08"
 ---
-## Task 1 
-Hypothesis: If you are older you are more likely to read a greater number of books per month.
+# Task 1 
+
+We want to know if having siblings affects a relationship between wake up time and exercise
+We expect that people without siblings will read more if they excercise less and that people with siblings will read more as they excercise more. 
 ```{r}
 setwd("/Users/carlaleone/Desktop/Exeter/Problem Sheet")
 library(readr)
 data <- read_csv("BIOM4025_data_2024.csv")
 View(data)
+
+data$age<- 2024 -  data$`Year of birth`
+data$commute<- (data$`Commute today` + data$`Commute yesterday`)/ 2
+data$siblings<- ifelse(data$Brothers > 0 | data$Sisters > 0, "Yes", "No")
+data$books<- data$`Number of books per month`
+data$wakeup<- data$`Waking up time`
+data$siblings<- ifelse(data$Brothers == 11 | data$Sisters > 0, "Yes", "No")
+data$n_siblings<- as.numeric(data$Brothers + data$Sisters)
+ 
+hist(data$n_siblings)
+
 ```
 
-## Task 2
+# Task 2
+
+Modelling. 
+
+```{r}
+model1<- glm(Exercise ~ n_siblings*Breakfast,family=poisson, data = data)
+summary(model1)
+
+model2<- glm(Exercise ~ n_siblings+ Breakfast,family=poisson, data = data)
+summary(model2)
+
+exercise_fitted<- predict(model1)
+plot(Exercise ~ n_siblings, data, cex.lab=1.2, col="grey", font.lab=2, pch=19, 
+     xlab="Number of Siblings", ylab="Exercise")
+lines(exercise_fitted[order(data$Exercise)] ~ sort(data$Exercise))
+```
+
+```{r}
+par(mfrow=c(2,2))
+plot(model1)
+```
+
+
+# Task 3
+
+Results.
+
+# Task 4
+
+Figures
