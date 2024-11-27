@@ -1,0 +1,142 @@
+---
+title: "Tutorial 5 Notes"
+output: html_document
+date: "2024-11-27"
+---
+
+# Intro
+Combining raster and vector dta, focus onhow to create or modify raster data using vectors.
+Use cropping, masking, rasterization, feature distance grids.
+Using same data from last tutorial, with the fires in a PA in Madagascar. There the data were stored as rasters, but that is not a very efficient way. Forest cover was in raster form. but here we generate the same outputs using the vector-raster outputs.
+
+## Load packages
+```{r}
+library(sf) 
+library(tidyverse) 
+library(terra) 
+library(tidyterra) 
+library(colorspace)
+
+getwd()
+setwd("/Users/carlaleone/Desktop/Exeter/GIS/Week 10/Tutorial 5")
+```
+
+Additional class of spatial data. So far we have been using sf() for vector objects and tera() for raster data. But tera has some limitations and has its own spatial vector format which needs to be used to interact with rasters. 
+
+## Converting to different format
+```{r}
+# read the rnp boundary
+rnp<- st_read("data/ranomafana.gpkg")
+#normal simple feature vector format
+
+#convert to the vector format
+rnp<- vect(rnp) # now a spat vector object
+rnp<- st_as_sf(rnp) # convert back to simple feature
+#can also do:
+rdp<- vect("data/ranomafana.gpkg")
+```
+
+It is very common to convert back and forth between these two vector formats depending on which operation you want to perform (e.g. to sf for geoprocessing and to SpatVector for interactions with raster data). For example, we could transform our national park boundary to projected coordinates (EPSG:32738) using sf then convert back to a SpatVector for interacting with raster data.
+```{r}
+rnp<- st_as_sf(rnp) %>% st_transform(32738) %>%
+vect()
+```
+
+We could also convert back to sf for generating our 10 km buffer zone around the national park using st_buffer, although terra also has its own buffer function for buffering SpatVectors
+```{r}
+#buffer = st_as_sf(rnp) %>% st_buffer(10000) %>% vect()
+buffer = buffer(rnp,10000)
+```
+
+## Read in forest cover data
+```{r}
+forest<- rast("data/forest2017.tif")
+forest #huge raster
+ggplot() +
+  geom_spatraster(data=forest) +
+  geom_spatvector(data=rnp, fill = "red") +
+  geom_spatvector(data = buffer, fill = "transparent", colour = "red")
+```
+## Clip our raster
+raster is very big, so want to crop to our site
+Use a pair of terra functions called `crop` and `mask`
+```{r}
+forest<- crop(forest,buffer) #crop forest to buffer
+#now plot is cropped to buffer zone
+ggplot() +
+  geom_spatraster(data=forest) +
+  geom_spatvector(data=rnp, fill = "red") +
+  geom_spatvector(data = buffer, fill = "transparent", colour = "red")
+```
+
+Next want to mask the buffer zone, because can still see some forest. Mask sets the value of any pictures outside our masking polygon layer to NA. Need to crop before masking, otherwise all the values outside polygon would be NA but it would not have cropped to that location, so would be on way too big of a scale.
+```{r}
+forest<- mask(forest, buffer)
+ggplot() +
+  geom_spatraster(data=forest) +
+  geom_spatvector(data=rnp, fill = "red") +
+  geom_spatvector(data = buffer, fill = "transparent", colour = "red")
+
+#with pipes:
+forest<- rast("data/forest2017.tif")%>%
+  crop(buffer)%>%
+  mas(buffer)
+```
+## Plotting
+Can make it a categorical rather than conitnuous raster by setting levels in the raster
+```{r}
+levels(forest)<- data.frame(id = 1, name = "forest")
+
+rnp_plot<- ggplot() +
+  geom_spatraster(data=forest) +
+  geom_spatvector(data=rnp, fill = "transparent") +
+  geom_spatvector(data = buffer, fill = "transparent", linetype = "dashed") +
+  scale_fill_manual(values = "forestgreen", na.translate = F)
+
+```
+
+## Read in fire data
+```{r}
+fires<- vect("data/fires.gpkg")
+fires #spatvector
+
+rnp_plot +
+  geom_spatvector (data = fires, colour = "red")
+```
+## Rasterize fires
+We may want to summarize fire extent, in the last tutorial we made a grid and counted value in the grid cells. But here we will turn our fire point data into a raster layer. This is rasterization:
+Use the vector you want to rasterize and a template raster which it will use to count points in the cell. Then need to give it a function for counting the points.
+```{r}
+fire_grid<- rasterize(fires, forest, fun = length)
+#if you look at fires has 30 m by 30 m cells, really small
+#need new blank raster, dimensions of buffer, resolution is 1000 x 1000 m
+template<- rast(buffer, resolution =c(1000, 1000))
+#now rasterize fires onto this template
+fire_grid<- rasterize(fires, template, fun = length)
+
+
+
+ggplot()+
+  geom_spatraster(data = fire_grid)+
+  geom_spatvector(data=rnp, fill = "transparent") +
+  geom_spatvector(data = buffer, fill = "transparent", linetype = "dashed") +
+  scale_fill_continuous_sequential("Heat", na.value = "transparent")
+
+#plot brightness to see how big the fres were. Is a column in the data set.
+fire_bright<- rasterize(fires, template,field = 'brightness',fun = sum) 
+```
+
+finding number of fires within 1 km of each grid cell
+```{r}
+#first buffer each cell
+fire_buffer<- buffer(fires, 1000)
+
+rnp_plot +geom_spatvector(data=fire_buffer)
+#rasterize onto the forest grid
+
+fire_bufgrid<- rasterize(fire_buffer, forest)
+#dont use the function argument anyomore, because these ar no longer points but polygons
+
+rnp_plot +geom_spatvector(data=fire_buffer)
+```
+
