@@ -72,3 +72,7 @@ qqline(resid(m))
 Plotting a model with multiple predictors
 - 3 continuous, need to plot each individually
 - if you have some categorical, could condense the plots
+
+What ig you have heteroscedasticity
+- think about why
+- if continuous, may need transform, if didnt work could do non parametric. But could also not be that big of a problem. If minor and done what you can, can still fit the model, as they are usually very robust. 
