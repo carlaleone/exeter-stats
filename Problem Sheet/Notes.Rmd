@@ -1,0 +1,74 @@
+---
+title: "Notes Nov 28th"
+output: html_document
+date: "2024-11-28"
+---
+
+Using 
+```{r}
+setwd("/Users/carlaleone/Desktop/Exeter/Practical 4")
+tl.data <- read.table("Dataset.csv", header=TRUE, sep = ",",
+                      stringsAsFactors = FALSE)
+View(t.data)
+tl.data$log.fam<- log(tl.data$fam)
+
+m<- glm(psr~status +log.fam, data = tl.data, family = poisson)
+summary(m)
+```
+plot relationship between psr and log.fam
+```{r}
+plot(psr~log.fam, data= tl.data)
+#in a lin regression could have done abline, but we want a curved line
+# expect an exponential relationship bc poisson
+
+#need to predict values of the model
+tl.data$predicted.psr<- predict(m)
+plot(psr~log.fam, data= tl.data)
+lines(predicted.psr~log.fam, data = tl.data)
+#lines do not fit the data
+#need to backtransform, bc data now is still on the log scale
+tl.data$predicted.psr<- predict(m, type = "response")
+plot(psr~log.fam, data= tl.data)
+lines(predicted.psr~log.fam, data = tl.data)
+
+#but still all lines connected, so need to sort the values
+plot(psr~log.fam, data= tl.data)
+lines(predicted.psr[order(log.fam)] ~sort(log.fam), data = tl.data)
+```
+
+While we vary log.fam, status is also changing. There is also dominant and subordinate individuals, so predictions are also being made based on this. These are the jumps we see in the graph.Happens when we want to plot but have multiple predictors. need to keep everthing else constatn. 
+```{r}
+plot(psr~log.fam, data= tl.data)
+lines(predicted.psr[order(log.fam)] ~sort(log.fam), data = tl.data[tl.data$status == "D",])
+lines(predicted.psr[order(log.fam)] ~sort(log.fam), data = tl.data[tl.data$status == "S",])
+#plotting each line individually
+
+```
+
+nEW DATA FRAME
+```{r}
+new.d<- data.frame(log.fam=seq(min(tl.data$log.fam), max(tl.data$log.fam),length = 10),
+rainfall = rep(mean(tl.data$rainfall), 10))
+View(new.d)
+m<- glm(psr~rainfall +log.fam, data = tl.data, family = poisson)
+
+new.d$predicted.psr<- predict(m, newdata =new.d, type = "response")
+
+plot(psr ~ log.fam, data=tl.data)
+lines(predicted.psr[order(log.fam)] ~ sort(log.fam), data=new.d)
+# predicted psr for log.fam and the average rainfall
+```
+remember when dropping values from a glm, and doing `drop1` or `anova`, use the chisq test. If it is "quasi" use the f test.
+When you do `drop1` shows you the strength of the effect of the variable being dropped. 
+Use `drop1` to see if removing the interaction is significant?
+better plot of the data vs better plot of the model
+
+glm and qqplot
+
+```{r}
+qqnorm(resid(m))
+qqline(resid(m))
+```
+Plotting a model with multiple predictors
+- 3 continuous, need to plot each individually
+- if you have some categorical, could condense the plots

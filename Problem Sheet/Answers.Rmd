@@ -49,7 +49,10 @@ data$avg.commute<- (data$Commute.today + data$Commute.yesterday)/ 2 #average com
 data$siblings<- ifelse(data$Brothers > 0 | data$Sisters > 0, "Yes", "No") # does the individual have siblings?
 data$n.siblings<- as.numeric(data$Brothers + data$Sisters) #how many siblings?
 data$Number.of.books.per.month<- as.numeric(data$Number.of.books.per.month)
-data$wakeup<- ifelse(data$Waking.up.time > 7:30 | data$Waking.up.time < 7:30, "Late", "Early") 
+data$wakeup<- format(strptime(data$Waking.up.time, format = "%H:%M"), "%H:%M")
+View(data)
+data$wakeup2<- as.numeric(data$wakeup)
+data$wakeup2<- ifelse(data$wakeup > 07:30 | data$wakeup < 07:30, "Late", "Early") 
 
 plot(data$Exercise~data$Number.of.books.per.month)
 table(data$siblings) #very few people without siblings
@@ -58,7 +61,7 @@ aggregate(data$new.height, by=list(data$siblings), mean, na.rm =T)
 ```
 
 ```{r}
-lm1<- lm(avg.commute ~ Exercise + Number.of.books.per.month, data = data) #most basic lm
+lm1<- lm(Exercise~wakeup, data = data) #most basic lm
 summary(lm1)
 lm2<- lm(Exercise ~ log(new.height)*Breakfast, data = data) #includes sibling interaction
 summary(lm2)
