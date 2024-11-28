@@ -3,27 +3,91 @@ title: "Problem Sheet 1"
 output: pdf_document
 date: "2024-10-08"
 ---
-# Task 1 
-
-We want to know if having siblings affects a relationship between wake up time and exercise
-We expect that people without siblings will read more if they excercise less and that people with siblings will read more as they excercise more. 
+# Task 1 : Hypothesis
+## Import data
 ```{r}
 setwd("/Users/carlaleone/Desktop/Exeter/Problem Sheet")
-library(readr)
-data <- read_csv("BIOM4025_data_2024.csv")
-View(data)
+data <- read.table("BIOM4025_data_2024.csv", header=TRUE, sep = ",", 
+                      stringsAsFactors = FALSE)
+head(data)
+```
 
-data$age<- 2024 -  data$`Year of birth`
-data$commute<- (data$`Commute today` + data$`Commute yesterday`)/ 2
-data$siblings<- ifelse(data$Brothers > 0 | data$Sisters > 0, "Yes", "No")
-data$books<- data$`Number of books per month`
-data$wakeup<- data$`Waking up time`
-data$siblings<- ifelse(data$Brothers == 11 | data$Sisters > 0, "Yes", "No")
-data$n_siblings<- as.numeric(data$Brothers + data$Sisters)
- 
-hist(data$n_siblings)
+## Hypothesis:
+We want to know whether certain inherited characteristics affect the amount that an individual exercises:
+Does height have an effect on the amount of exercise that an individual does, and does having siblings affect this relationship?
+
+
+
+## Explore data
+```{r}
+# if we want to use height, need to convert it into cm 
+height_to_cm <- function(height) {
+  sapply(height, function(h) {
+    if (grepl("cm", h)) { # If the value is already in cm convert it to numeric format
+      as.numeric(gsub("cm", "", h))
+    } else if (grepl("m",h)) {
+      m<- as.numeric(gsub("m.*", "", h))
+      (m*100)
+    } # convert the values that are in m
+    else if (grepl("ft", h)) {
+      # If the value is in feet and inches
+      ft <- as.numeric(gsub("ft.*", "", h)) # identify ft
+      in_val <- as.numeric(gsub(".*ft |in", "", h)) # identify in
+      (ft * 30.48) + (in_val * 2.54) # Convert ft and in to cm
+    } else {
+      NA 
+    }
+  })
+}
+
+data$new.height<- height_to_cm(data$Height)
+hist(data$new.height)
+
+# add other columns
+data$age<- 2024 -  data$Year.of.birth # age of individual
+data$avg.commute<- (data$Commute.today + data$Commute.yesterday)/ 2 #average commute of individual
+data$siblings<- ifelse(data$Brothers > 0 | data$Sisters > 0, "Yes", "No") # does the individual have siblings?
+data$n.siblings<- as.numeric(data$Brothers + data$Sisters) #how many siblings?
+data$Number.of.books.per.month<- as.numeric(data$Number.of.books.per.month)
+data$wakeup<- ifelse(data$Waking.up.time > 7:30 | data$Waking.up.time < 7:30, "Late", "Early") 
+
+plot(data$Exercise~data$Number.of.books.per.month)
+table(data$siblings) #very few people without siblings
+aggregate(data$new.height, by=list(data$siblings), mean, na.rm =T)
 
 ```
+
+```{r}
+lm1<- lm(avg.commute ~ Exercise + Number.of.books.per.month, data = data) #most basic lm
+summary(lm1)
+lm2<- lm(Exercise ~ log(new.height)*Breakfast, data = data) #includes sibling interaction
+summary(lm2)
+anova(lm1,lm2) # there is not really a significant difference between the models
+AIC(lm1, lm2)
+
+hist(data$Exercise)
+plot(lm2)
+# plots all look very good in terms of normality of residuals and heteroscedasticity. 
+```
+
+
+```{r}
+# BOXCOX Transforation
+library(MASS)
+bc <- boxcox(lm(data$Exercise ~ 1), plotit = FALSE)
+lambda <- bc$x[which.max(bc$y)]
+lambda
+#0.3 
+data$bc.exercise <- (data$Exercise^lambda - 1) / lambda # APPLY this transformation using lambda to each number of fam
+
+hist(data$new.height)
+# plot
+par(mfrow=c(1,2))
+hist(data$bc.exercise)
+qqnorm(data$bc.exercise)
+qqline(data$bc.exercise)
+```
+
 
 # Task 2
 
@@ -55,3 +119,11 @@ Results.
 # Task 4
 
 Figures
+```{r}
+plot(psr ~ log.fam, data=t.data, pch=NA, xlab="log(FAM)", ylab="parasite species richness")
+points(psr ~ log.fam, data=t.data[t.data$status=="S", ], pch=19, col="grey70") 
+points(psr ~ log.fam, data=t.data[t.data$status=="D", ], pch=19, col="grey30")
+lines(psr.predicted[order(t.data$log.fam)] ~ sort(t.data$log.fam))
+legend(x="topleft", legend=c("D", "S"), pch=19, lty = 1, col=c("grey30", "grey70"), title="social status", cex=0.7)
+```
+
