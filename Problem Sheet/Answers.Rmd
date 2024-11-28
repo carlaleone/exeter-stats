@@ -51,6 +51,7 @@ data$n.siblings<- as.numeric(data$Brothers + data$Sisters) #how many siblings?
 data$Number.of.books.per.month<- as.numeric(data$Number.of.books.per.month)
 data$wakeup<- format(strptime(data$Waking.up.time, format = "%H:%M"), "%H:%M")
 View(data)
+class(data$wakeup)
 data$wakeup2<- as.numeric(data$wakeup)
 data$wakeup2<- ifelse(data$wakeup > 07:30 | data$wakeup < 07:30, "Late", "Early") 
 
@@ -58,6 +59,7 @@ plot(data$Exercise~data$Number.of.books.per.month)
 table(data$siblings) #very few people without siblings
 aggregate(data$new.height, by=list(data$siblings), mean, na.rm =T)
 
+boxplot(Exercise ~ wakeup, data= data)
 ```
 
 ```{r}
