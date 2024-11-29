@@ -9,12 +9,14 @@ date: "2024-10-08"
 setwd("/Users/carlaleone/Desktop/Exeter/Problem Sheet")
 data <- read.table("BIOM4025_data_2024.csv", header=TRUE, sep = ",", 
                       stringsAsFactors = FALSE)
-head(data)
+View(data)
 ```
 
 ## Hypothesis:
-We want to know whether certain inherited characteristics affect the amount that an individual exercises:
+We want to know whether morning routine affects the amount that an individual exercises:
 Does height have an effect on the amount of exercise that an individual does, and does having siblings affect this relationship?
+
+We expect individuals to exercise more if they wake up earlier, have breakfast, and have a shorter average commute time. 
 
 
 
@@ -48,25 +50,51 @@ data$age<- 2024 -  data$Year.of.birth # age of individual
 data$avg.commute<- (data$Commute.today + data$Commute.yesterday)/ 2 #average commute of individual
 data$siblings<- ifelse(data$Brothers > 0 | data$Sisters > 0, "Yes", "No") # does the individual have siblings?
 data$n.siblings<- as.numeric(data$Brothers + data$Sisters) #how many siblings?
-data$Number.of.books.per.month<- as.numeric(data$Number.of.books.per.month)
-data$wakeup<- format(strptime(data$Waking.up.time, format = "%H:%M"), "%H:%M")
-View(data)
-class(data$wakeup)
-data$wakeup2<- as.numeric(data$wakeup)
-data$wakeup2<- ifelse(data$wakeup > 07:30 | data$wakeup < 07:30, "Late", "Early") 
 
-plot(data$Exercise~data$Number.of.books.per.month)
+class(data$Waking.up.time) #character class, so need to convert it to numeric
+data$wakeup<- as.POSIXct(paste("2024-01-01", data$Waking.up.time), format = "%Y-%m-%d %H:%M") #convert character to date and time format
+data$hours.midnight<-  as.numeric(format(data$wakeup, "%H")) + as.numeric(format(data$wakeup, "%M")) / 60 #convert date and time to numeric
+
+hist(data$Exercise)
+#skewed data, so could log transform it
+data$log.exercise<- log(data$Exercise)
+
+
+plot(data$Exercise~data$hours.midnight)
 table(data$siblings) #very few people without siblings
-aggregate(data$new.height, by=list(data$siblings), mean, na.rm =T)
-
-boxplot(Exercise ~ wakeup, data= data)
+aggregate(data$hours.midnight, by=list(data$Breakfast), mean, na.rm =T)
+hist(data$Exercise)
+#treating as count data -> will need to be poisson
 ```
 
+First model using all predictors
 ```{r}
-lm1<- lm(Exercise~wakeup, data = data) #most basic lm
+lm1<- glm(Exercise~hours.midnight+ Breakfast + avg.commute, data = data, family = poisson) 
 summary(lm1)
+# no significance
+
+glm2<- glm(Exercise~hours.midnight+ Breakfast, data = data, family = poisson)
+
+anova(lm1,glm2, test = "chisq")
+```
+
+
+```{r}
+plot(lm1)
+shapiro.test(resid(lm1))
+```
+
+
+```{r}
+hist(log(data$Exercise))
+hist(data$bc.exercise)
+
+plot(data$Exercise~data$avg.commute)
+
 lm2<- lm(Exercise ~ log(new.height)*Breakfast, data = data) #includes sibling interaction
 summary(lm2)
+lm3<- lm(Exercise~ prop.brothers, data =data)
+summary(lm3)
 anova(lm1,lm2) # there is not really a significant difference between the models
 AIC(lm1, lm2)
 
@@ -99,11 +127,16 @@ qqline(data$bc.exercise)
 Modelling. 
 
 ```{r}
-model1<- glm(Exercise ~ n_siblings*Breakfast,family=poisson, data = data)
+model1<- glm(Exercise ~ n.siblings*Breakfast,family=poisson, data = data)
 summary(model1)
 
-model2<- glm(Exercise ~ n_siblings+ Breakfast,family=poisson, data = data)
+model2<- glm(Exercise ~ n.siblings+ Breakfast,family=poisson, data = data)
 summary(model2)
+
+
+model3<- glm(Exercise ~ new.height*siblings, data=data, family =poisson)
+summary(model3)
+plot(model3)
 
 exercise_fitted<- predict(model1)
 plot(Exercise ~ n_siblings, data, cex.lab=1.2, col="grey", font.lab=2, pch=19, 
