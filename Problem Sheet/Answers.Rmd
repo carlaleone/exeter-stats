@@ -13,162 +13,125 @@ View(data)
 ```
 
 ## Hypothesis:
-We want to know whether morning routine affects the amount that an individual exercises:
-Does height have an effect on the amount of exercise that an individual does, and does having siblings affect this relationship?
-
+We want to know whether morning routine affects the amount that an individual exercises. Average daily commute, wake up time, in terms of hours after midnight, and whether an individual has breakfast are not are the factors describing morning routine. 
 We expect individuals to exercise more if they wake up earlier, have breakfast, and have a shorter average commute time. 
 
 
+# Task 2: Model
 
-## Explore data
+1. Adjust columns to make them the appropriate units and classes.
 ```{r}
-# if we want to use height, need to convert it into cm 
-height_to_cm <- function(height) {
-  sapply(height, function(h) {
-    if (grepl("cm", h)) { # If the value is already in cm convert it to numeric format
-      as.numeric(gsub("cm", "", h))
-    } else if (grepl("m",h)) {
-      m<- as.numeric(gsub("m.*", "", h))
-      (m*100)
-    } # convert the values that are in m
-    else if (grepl("ft", h)) {
-      # If the value is in feet and inches
-      ft <- as.numeric(gsub("ft.*", "", h)) # identify ft
-      in_val <- as.numeric(gsub(".*ft |in", "", h)) # identify in
-      (ft * 30.48) + (in_val * 2.54) # Convert ft and in to cm
-    } else {
-      NA 
-    }
-  })
-}
-
-data$new.height<- height_to_cm(data$Height)
-hist(data$new.height)
-
 # add other columns
-data$age<- 2024 -  data$Year.of.birth # age of individual
 data$avg.commute<- (data$Commute.today + data$Commute.yesterday)/ 2 #average commute of individual
-data$siblings<- ifelse(data$Brothers > 0 | data$Sisters > 0, "Yes", "No") # does the individual have siblings?
-data$n.siblings<- as.numeric(data$Brothers + data$Sisters) #how many siblings?
-data <- data[data$Gender != "Other",]
-View(data)
 class(data$Waking.up.time) #character class, so need to convert it to numeric
 data$wakeup<- as.POSIXct(paste("2024-01-01", data$Waking.up.time), format = "%Y-%m-%d %H:%M") #convert character to date and time format
 data$hours.midnight<-  as.numeric(format(data$wakeup, "%H")) + as.numeric(format(data$wakeup, "%M")) / 60 #convert date and time to numeric
-
-hist(data$Exercise)
-#skewed data and similar to poisson because the exercise is count data. Will use a glm.
+# are there any missing values?
+is.na(data$avg.commute)
+data <- data[!is.na(data$avg.commute),] #remove na from average commute column
+View(data)
 ```
 
-Explore variables + Check for correlations or interactions in the predictors:
+
+2. Explore variables + Check for correlations or interactions in the predictors:
 ```{r}
-plot(data$Exercise~data$hours.midnight)
+# Plot Exercise against wake up time
+plot(data$Exercise~data$Hours.Slept)
+# No obvious relationship, could be a slightly negative relationship. 
+```
+
+
+```{r}
+# Plot Exercise against average commute
 plot(data$Exercise~data$avg.commute)
-# no obvious relationships from the data. 
+# Again,no obvious relationships from the data, but could be leaning towards a positive slope.
+```
 
-#check if continuous variables are correlated
-cor.test(data$hours.midnight,data$avg.commute) #not correlated, p = 0.5142, cor = -0.07006104
 
-#Is there a potential relstionship between the categorical and continuous predictors?
-aggregate(data$hours.midnight, by=list(data$Breakfast), mean, na.rm =T)
-boxplot(hours.midnight~Breakfast, data=data)
-#seems like people who don't eat breakfast wake up later.
+```{r}
+#Check if continuous variables are correlated
+cor.test(data$Hours.Slept,data$avg.commute) 
+#not correlated
+#p = 0.5643, cor = -0.06157292 
+```
+
+
+```{r}
+#Is there a potential relationship between the categorical and continuous predictors?
+print(aggregate(data$Hours.Slept, by=list(data$Breakfast), mean, na.rm =T))
+```
+
+
+```{r}
+# Visualize the table with a box plot
+boxplot(Hours.Slept~Breakfast, data=data)
+#Seems like people who eat breakfast sleep longer.
+```
+
+
+```{r}
 hist(data$Exercise)
-#treating as count data -> will need to be poisson
+# The response is not normal, but it is count data so should be modeled in a poisson distribution
+```
+
+3. Create the model
+
+- Creating a model with Breakfast as an interaction term with time of wake up.
+```{r}
+m.i<- glm(Exercise~Hours.Slept*Breakfast + avg.commute, data = data, family = poisson)
+summary(m.i)
+#AIC = 378.45 and the interaction term is not significant
+# No overdispersion, Residual deviance < Residual Degrees of Freedom
 
 ```
 
-First model using all predictors
 ```{r}
-newests<- lm(hours.midnight~mc.siblings*Breakfast, data=data, na.values=T)
-plot(data$hours.midnight~data$mc.siblings)
-
-hist(data$hours.midnight)
-qqnorm(resid(newest))
-qqline(resid(newest))
-# Residuals look normal
-
-
+anova(m.i,test="Chisq")
+# Avg commute is the least significant term, so in the next model can remove it.
 ```
 
-Check if continuous predictors are correlated.
 ```{r}
-cor.test(data$hours.midnight,data$avg.commute) #not correlated
+m.i.2<- glm(Exercise~Hours.Slept*Breakfast , data = data, family = poisson)
+summary(m.i.2)
+# AIC = 376.55
+# No overdispersion, Residual deviance < Degrees of Freedom
+```
+Neither of the models are overdispersed, however, the model with the interaction term does not have a significant interaction, has a higher AIC, and fewer degrees of freedom. It is likely that having breakfast is not significant when other variables are used as predictors, despite a difference indicated by the earlier box plot.  Therefore, we will use the model without the interaction.
+
+```{r}
+m<- glm(Exercise~Hours.Slept+Breakfast , data = data, family = poisson)
+summary(m)
+#AIC = 376.23
+anova(m, test= "Chisq")
 ```
 
-
-Create the model
+Check if we can further simplify the model. 
 ```{r}
-glm1<- glm(Exercise~hours.midnight*Breakfast + avg.commute, data = data, family = poisson)
-glm2<- glm(Exercise~hours.midnight+ Breakfast + avg.commute, data = data, family = poisson)
-summary(glm2)
-anova(glm2,test = "Chisq" )
-#avg commute is the least significant variable, so can be removed from the model. 
-plot(glm2)
-drop1(glm1, test = "Chisq")
-qqnorm(resid(glm2))
-qqline(resid(glm2))
+m2<- glm(Exercise~Breakfast , data = data, family = poisson)
+summary(m2) 
+#AIC = 375.57
+anova(m2, test= "Chisq")
+#breakfast is more significant when hours slept is still included in the model. 
+#Therefore we will use m as our final model.
+```
+The model with only breakfast has a lower AIC, but it makes Breakfast less significant. Therefore, we will keep the original model with both Breakfast and Hours slept.
+
+
+- Checking diagnostic plots
+```{r}
+par(mfrow=c(2,2))
+plot(m)
+# The residuals seem normally distributed (QQ Plot), with a little deviance and there is a little bit of bunching but generally the variances seem scattered and show no pattern. 
 ```
 
-
-```{r}
-plot(lm1)
-shapiro.test(resid(lm1))
-```
+The diagnostic plots look ok, they are not perfect, but it is still possible to move on with the model. So this is our final model:
+`glm(Exercise~Hours.Slept+Breakfast , data = data, family = poisson)`
 
 
-```{r}
-hist(log(data$Exercise))
-hist(data$bc.exercise)
 
-plot(data$Exercise~data$avg.commute)
-
-lm2<- lm(Exercise ~ log(new.height)*Breakfast, data = data) #includes sibling interaction
-summary(lm2)
-lm3<- lm(Exercise~ prop.brothers, data =data)
-summary(lm3)
-anova(lm1,lm2) # there is not really a significant difference between the models
-AIC(lm1, lm2)
-
-hist(data$Exercise)
-plot(lm2)
-# plots all look very good in terms of normality of residuals and heteroscedasticity. 
-```
 
 
 ```{r}
-# BOXCOX Transforation
-library(MASS)
-bc <- boxcox(lm(data$Exercise ~ 1), plotit = FALSE)
-lambda <- bc$x[which.max(bc$y)]
-lambda
-#0.3 
-data$bc.exercise <- (data$Exercise^lambda - 1) / lambda # APPLY this transformation using lambda to each number of fam
-
-hist(data$new.height)
-# plot
-par(mfrow=c(1,2))
-hist(data$bc.exercise)
-qqnorm(data$bc.exercise)
-qqline(data$bc.exercise)
-```
-
-
-# Task 2
-
-Modelling. 
-
-```{r}
-model1<- glm(Exercise ~ n.siblings*Breakfast,family=poisson, data = data)
-summary(model1)
-
-model2<- glm(Exercise ~ n.siblings+ Breakfast,family=poisson, data = data)
-summary(model2)
-
-
-model3<- glm(Exercise ~ new.height*siblings, data=data, family =poisson)
-summary(model3)
-plot(model3)
 
 exercise_fitted<- predict(model1)
 plot(Exercise ~ n_siblings, data, cex.lab=1.2, col="grey", font.lab=2, pch=19, 
@@ -176,17 +139,38 @@ plot(Exercise ~ n_siblings, data, cex.lab=1.2, col="grey", font.lab=2, pch=19,
 lines(exercise_fitted[order(data$Exercise)] ~ sort(data$Exercise))
 ```
 
+# Task 3: Results
+
 ```{r}
-par(mfrow=c(2,2))
-plot(model1)
+b0 <- m$coefficients[1] # intercept
+b1 <- m$coefficients[2] # hours slept
+b2 <- m$coefficients[3] # breakfast
+
+predicted <- predict(m, type='response') 
+predicted.Y <- predicted[data$Breakfast=="Yes"] 
+predicted.N <- predicted[data$Breakfast=="No"]
+
+logit.m.predicted <- b0 + b1*data$Hours.Slept
+predicted.2 <- 1/(1+exp(-logit.psr.predicted))
 ```
 
 
-# Task 3
-
-Results.
-
 # Task 4
+```{r}
+plot(Exercise ~ Hours.Slept, data=data, pch=NA, xlab="Hours of Sleep", ylab="Exercise")
+points(Exercise ~ Hours.Slept, data=data[data$Breakfast=="Yes", ], pch=19, col="grey70") 
+points(Exercise ~ Hours.Slept, data=data[data$Breakfast=="No", ], pch=19, col="grey30")
+lines(predicted.Y[order(data$Exercise[data$Breakfast=="Yes"])] ~ sort(data$Exercise[data$Breakfast=="Yes"]), lwd=1.5, col="grey70")
+lines(predicted.N[order(data$Exercise[data$Breakfast=="No"])] ~ sort(data$Exercise[data$Breakfast=="No"]), lwd=1.5, col="grey30")
+legend(x="topleft", legend=c("Yes", "No"), pch=19,
+col=c("grey30", "grey70"), lwd=c(1,1), title="Eats Breakfast", cex=0.8)
+```
+```{r}
+plot(Exercise~Hours.Slept, data=data)
+lines(predicted[order(Hours.Slept)] ~sort(Hours.Slept), data = data[data$Breakfast == "Yes",])
+lines(predicted[order(Hours.Slept)] ~sort(Hours.Slept), data = data[data$Breakfast == "No",])
+```
+
 
 Figures
 ```{r}
