@@ -50,32 +50,64 @@ data$age<- 2024 -  data$Year.of.birth # age of individual
 data$avg.commute<- (data$Commute.today + data$Commute.yesterday)/ 2 #average commute of individual
 data$siblings<- ifelse(data$Brothers > 0 | data$Sisters > 0, "Yes", "No") # does the individual have siblings?
 data$n.siblings<- as.numeric(data$Brothers + data$Sisters) #how many siblings?
-
+data <- data[data$Gender != "Other",]
+View(data)
 class(data$Waking.up.time) #character class, so need to convert it to numeric
 data$wakeup<- as.POSIXct(paste("2024-01-01", data$Waking.up.time), format = "%Y-%m-%d %H:%M") #convert character to date and time format
 data$hours.midnight<-  as.numeric(format(data$wakeup, "%H")) + as.numeric(format(data$wakeup, "%M")) / 60 #convert date and time to numeric
 
 hist(data$Exercise)
-#skewed data, so could log transform it
-data$log.exercise<- log(data$Exercise)
+#skewed data and similar to poisson because the exercise is count data. Will use a glm.
+```
 
-
+Explore variables + Check for correlations or interactions in the predictors:
+```{r}
 plot(data$Exercise~data$hours.midnight)
-table(data$siblings) #very few people without siblings
+plot(data$Exercise~data$avg.commute)
+# no obvious relationships from the data. 
+
+#check if continuous variables are correlated
+cor.test(data$hours.midnight,data$avg.commute) #not correlated, p = 0.5142, cor = -0.07006104
+
+#Is there a potential relstionship between the categorical and continuous predictors?
 aggregate(data$hours.midnight, by=list(data$Breakfast), mean, na.rm =T)
+boxplot(hours.midnight~Breakfast, data=data)
+#seems like people who don't eat breakfast wake up later.
 hist(data$Exercise)
 #treating as count data -> will need to be poisson
+
 ```
 
 First model using all predictors
 ```{r}
-lm1<- glm(Exercise~hours.midnight+ Breakfast + avg.commute, data = data, family = poisson) 
-summary(lm1)
-# no significance
+newests<- lm(hours.midnight~mc.siblings*Breakfast, data=data, na.values=T)
+plot(data$hours.midnight~data$mc.siblings)
 
-glm2<- glm(Exercise~hours.midnight+ Breakfast, data = data, family = poisson)
+hist(data$hours.midnight)
+qqnorm(resid(newest))
+qqline(resid(newest))
+# Residuals look normal
 
-anova(lm1,glm2, test = "chisq")
+
+```
+
+Check if continuous predictors are correlated.
+```{r}
+cor.test(data$hours.midnight,data$avg.commute) #not correlated
+```
+
+
+Create the model
+```{r}
+glm1<- glm(Exercise~hours.midnight*Breakfast + avg.commute, data = data, family = poisson)
+glm2<- glm(Exercise~hours.midnight+ Breakfast + avg.commute, data = data, family = poisson)
+summary(glm2)
+anova(glm2,test = "Chisq" )
+#avg commute is the least significant variable, so can be removed from the model. 
+plot(glm2)
+drop1(glm1, test = "Chisq")
+qqnorm(resid(glm2))
+qqline(resid(glm2))
 ```
 
 
@@ -158,10 +190,10 @@ Results.
 
 Figures
 ```{r}
-plot(psr ~ log.fam, data=t.data, pch=NA, xlab="log(FAM)", ylab="parasite species richness")
-points(psr ~ log.fam, data=t.data[t.data$status=="S", ], pch=19, col="grey70") 
-points(psr ~ log.fam, data=t.data[t.data$status=="D", ], pch=19, col="grey30")
-lines(psr.predicted[order(t.data$log.fam)] ~ sort(t.data$log.fam))
+plot(hours.midnight ~ n.siblings, data=data, pch=NA, xlab="Number of Siblings", ylab="Hours after midnight")
+points(hours.midnight ~ n.siblings, data=data[data$Breakfast=="Yes", ], pch=19, col="grey70") 
+points(hours.midnight ~ n.siblings, data=data[data$Breakfast=="No", ], pch=19, col="grey30")
+lines(psr.predicted[order(data$)] ~ sort(t.data$log.fam))
 legend(x="topleft", legend=c("D", "S"), pch=19, lty = 1, col=c("grey30", "grey70"), title="social status", cex=0.7)
 ```
 
