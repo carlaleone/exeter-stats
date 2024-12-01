@@ -35,9 +35,11 @@ View(data)
 
 2. Explore variables + Check for correlations or interactions in the predictors:
 ```{r}
-# Plot Exercise against wake up time
+# Plot Exercise against hours slept
+mean(data$Hours.Slept)
+# mean hours slept = 8.252778
 plot(data$Exercise~data$Hours.Slept)
-# No obvious relationship, could be a slightly negative relationship. 
+#The data seems to be centered around the mean, so I would expect the model to have a curved line and peak at the mean.Therefore, I will consider adding a square term. 
 ```
 
 
@@ -76,79 +78,84 @@ hist(data$Exercise)
 
 3. Create the model
 
-- Creating a model with Breakfast as an interaction term with time of wake up.
+- Starting with the most complex model
 ```{r}
-m.i<- glm(Exercise~Hours.Slept*Breakfast + avg.commute, data = data, family = poisson)
-summary(m.i)
-#AIC = 378.45 and the interaction term is not significant
-# No overdispersion, Residual deviance < Residual Degrees of Freedom
-
+msi1<- glm(Exercise~Hours.Slept*Breakfast + I(Hours.Slept^2) + avg.commute, data=data, family= poisson)
+anova(msi1, test="Chisq")
+# we can remove average commute
 ```
 
+- Is the interaction term significant?
+First, model without interaction
 ```{r}
-anova(m.i,test="Chisq")
-# Avg commute is the least significant term, so in the next model can remove it.
+m.s<- glm(Exercise~Hours.Slept + Breakfast+ I(Hours.Slept^2), data=data, family= poisson)
+# without interaction
+summary(m.s)
+# AIC = 374.53
+# No overdispersion
 ```
 
+Model with interaction
 ```{r}
-m.i.2<- glm(Exercise~Hours.Slept*Breakfast , data = data, family = poisson)
-summary(m.i.2)
-# AIC = 376.55
-# No overdispersion, Residual deviance < Degrees of Freedom
-```
-Neither of the models are overdispersed, however, the model with the interaction term does not have a significant interaction, has a higher AIC, and fewer degrees of freedom. It is likely that having breakfast is not significant when other variables are used as predictors, despite a difference indicated by the earlier box plot.  Therefore, we will use the model without the interaction.
-
-```{r}
-m<- glm(Exercise~Hours.Slept+Breakfast , data = data, family = poisson)
-summary(m)
-#AIC = 376.23
-anova(m, test= "Chisq")
+m.s.i<- glm(Exercise~Hours.Slept*Breakfast + I(Hours.Slept^2), data=data, family= poisson)
+summary(m.s.i)
+#AIC = 372.53
+# No overdispersion
 ```
 
-Check if we can further simplify the model. 
+Compare the two models in an analysis of deviance:
 ```{r}
-m2<- glm(Exercise~Breakfast , data = data, family = poisson)
-summary(m2) 
-#AIC = 375.57
-anova(m2, test= "Chisq")
-#breakfast is more significant when hours slept is still included in the model. 
-#Therefore we will use m as our final model.
+anova(m.s,m.s.i,test ="Chisq")
 ```
-The model with only breakfast has a lower AIC, but it makes Breakfast less significant. Therefore, we will keep the original model with both Breakfast and Hours slept.
-
+The more complex model, with the interaction term has a lower residual deviance and is a significantly better fit of the data p = 0.04557. It is more complex, but it is also better at modelling the data and has a lower AIC. Both models have a residual deviance below the residual degrees of freedom, meaning they are not overdispersed. 
 
 - Checking diagnostic plots
 ```{r}
 par(mfrow=c(2,2))
-plot(m)
-# The residuals seem normally distributed (QQ Plot), with a little deviance and there is a little bit of bunching but generally the variances seem scattered and show no pattern. 
+plot(m.s.i)
 ```
-
-The diagnostic plots look ok, they are not perfect, but it is still possible to move on with the model. So this is our final model:
-`glm(Exercise~Hours.Slept+Breakfast , data = data, family = poisson)`
-
-
-
-
-
 ```{r}
-
-exercise_fitted<- predict(model1)
-plot(Exercise ~ n_siblings, data, cex.lab=1.2, col="grey", font.lab=2, pch=19, 
-     xlab="Number of Siblings", ylab="Exercise")
-lines(exercise_fitted[order(data$Exercise)] ~ sort(data$Exercise))
+anova(m.s.i, test="Chisq")
 ```
+
+The diagnostic plots only look ok for the QQ Normal plot. The variances do not look evenly distributed, however, the diagnostic plots for glm are harder to interpret. Therefore, we will still use the more complex model as it is the best fit for the data. So this is the final model:
+
+`glm(Exercise~Hours.Slept*Breakfast + I(Hours.Slept^2), data = data, family = poisson)`
+
+
 
 # Task 3: Results
+Hours of sleep has a significant effect on the number of times and individual exercises (), 
+
+There was no significant interaction between the effects of hours of sleep and breakfast on 
+
+(χ2 1,85 = 3.9976, p=0.04557). 
+
+
+There was a significant quadratic relationship between the the number of times and individual exercised and hours slept (b±SE = 0.852±0.245; Z-Value 1,85 = -2.3066; P =0.0211).
+
+While the interaction term of Breakfast was not significant in the model prediction, it did significantly improve the model fit (χ2 1 = 3.9976 , P = 0.04557).  
+
+
+est = -0.04178 
+st error = 0.01812
+
+
 
 ```{r}
-b0 <- m$coefficients[1] # intercept
-b1 <- m$coefficients[2] # hours slept
-b2 <- m$coefficients[3] # breakfast
+b0 <- m.s.i$coefficients[1] # intercept
+b0
+b1 <- m.s.i$coefficients[2] # hours slept
+b2 <- m.s.i$coefficients[3] # breakfast
+b3 <- m.s.i$coefficients[4] # Quadratic term
+b4 <- m.s.i$coefficients[5] # Interaction term
 
-predicted <- predict(m, type='response') 
-predicted.Y <- predicted[data$Breakfast=="Yes"] 
-predicted.N <- predicted[data$Breakfast=="No"]
+
+
+predicted.model <- predict(m.s.i, type='response') 
+predicted.modelY <- predicted.model[data$Breakfast=="Yes"] 
+predicted.modelN <- predicted.model[data$Breakfast=="No"]
+predicted.modelY
 
 logit.m.predicted <- b0 + b1*data$Hours.Slept
 predicted.2 <- 1/(1+exp(-logit.psr.predicted))
@@ -156,21 +163,33 @@ predicted.2 <- 1/(1+exp(-logit.psr.predicted))
 
 
 # Task 4
+First create a new data fram for the predicted values to ensure a smooth line in the final plot.
 ```{r}
-plot(Exercise ~ Hours.Slept, data=data, pch=NA, xlab="Hours of Sleep", ylab="Exercise")
-points(Exercise ~ Hours.Slept, data=data[data$Breakfast=="Yes", ], pch=19, col="grey70") 
-points(Exercise ~ Hours.Slept, data=data[data$Breakfast=="No", ], pch=19, col="grey30")
-lines(predicted.Y[order(data$Exercise[data$Breakfast=="Yes"])] ~ sort(data$Exercise[data$Breakfast=="Yes"]), lwd=1.5, col="grey70")
-lines(predicted.N[order(data$Exercise[data$Breakfast=="No"])] ~ sort(data$Exercise[data$Breakfast=="No"]), lwd=1.5, col="grey30")
-legend(x="topleft", legend=c("Yes", "No"), pch=19,
-col=c("grey30", "grey70"), lwd=c(1,1), title="Eats Breakfast", cex=0.8)
-```
-```{r}
-plot(Exercise~Hours.Slept, data=data)
-lines(predicted[order(Hours.Slept)] ~sort(Hours.Slept), data = data[data$Breakfast == "Yes",])
-lines(predicted[order(Hours.Slept)] ~sort(Hours.Slept), data = data[data$Breakfast == "No",])
+newdata.Y <- data.frame(Breakfast=rep("Yes", 100),
+                     Hours.Slept=seq(min(data$Hours.Slept[data$Breakfast=="Yes"]),
+                                max(data$Hours.Slept[data$Breakfast=="Yes"]),
+                                                 length.out=100))
+
+newdata.N <- data.frame(Breakfast=rep("No", 100),
+                         Hours.Slept=seq(min(data$Hours.Slept[data$Breakfast=="No"]),
+                                     max(data$Hours.Slept[data$Breakfast=="No"]),
+                                                  length.out=100))
+
+predicted.Y2 <- predict(m.s.i, newdata.Y, type='response')
+predicted.N2 <- predict(m.s.i, newdata.N, type='response')
 ```
 
+```{r}
+plot(Exercise ~ Hours.Slept, data=data, pch=NA, xlab="Hours of Sleep", ylab="Exercise")
+points(Exercise ~ Hours.Slept, data=data[data$Breakfast=="Yes", ], pch=19, col="blue") 
+points(Exercise ~ Hours.Slept, data=data[data$Breakfast=="No", ], pch=19, col="red")
+lines(predicted.Y2[order(newdata.Y$Hours.Slept)] ~
+        sort(newdata.Y$Hours.Slept), lwd=1.5, col="blue")
+lines(predicted.N2[order(newdata.N$Hours.Slept)] ~
+        sort(newdata.N$Hours.Slept), lwd=1.5, col="red")
+legend(x="topleft", legend=c("Yes", "No"), pch=19,
+col=c("blue", "red"), lwd=c(1,1), title="Eats Breakfast", cex=0.8)
+```
 
 Figures
 ```{r}

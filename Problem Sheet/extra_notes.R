@@ -36,3 +36,40 @@ qqline(resid(newest))
 # Residuals look normal
 # Variances don't demonstrate any clear patterns and look equally distributed
 
+
+# Unused Models ----
+- Creating a model with Breakfast as an interaction term with time of wake up.
+
+m.i<- glm(Exercise~Hours.Slept*Breakfast + avg.commute, data = data, family = poisson)
+summary(m.i)
+#AIC = 378.45 and the interaction term is not significant
+# No overdispersion, Residual deviance < Residual Degrees of Freedom
+
+
+
+anova(m.i,test="Chisq")
+# Avg commute is the least significant term, so in the next model can remove it.
+
+
+
+m.i.2<- glm(Exercise~Hours.Slept*Breakfast , data = data, family = poisson)
+summary(m.i.2)
+# AIC = 376.55
+# No overdispersion, Residual deviance < Degrees of Freedom
+
+
+
+m<- glm(Exercise~Hours.Slept+Breakfast , data = data, family = poisson)
+summary(m)
+#AIC = 376.23
+anova(m, test= "Chisq")
+
+
+m2<- glm(Exercise~Breakfast , data = data, family = poisson)
+summary(m2) 
+#AIC = 375.57
+anova(m2, test= "Chisq")
+#breakfast is more significant when hours slept is still included in the model. 
+#Therefore we will use m as our final model.
+
+
