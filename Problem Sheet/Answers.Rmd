@@ -80,7 +80,8 @@ hist(data$Exercise)
 
 - Starting with the most complex model
 ```{r}
-msi1<- glm(Exercise~Hours.Slept*Breakfast + I(Hours.Slept^2) + avg.commute, data=data, family= poisson)
+msi1<- glm(Exercise~Hours.Slept+ Hours.Slept*Breakfast + I(Hours.Slept^2) + avg.commute, data=data, family= poisson)
+summary(msi1)
 anova(msi1, test="Chisq")
 # we can remove average commute
 ```
@@ -97,7 +98,7 @@ summary(m.s)
 
 Model with interaction
 ```{r}
-m.s.i<- glm(Exercise~Hours.Slept*Breakfast + I(Hours.Slept^2), data=data, family= poisson)
+m.s.i<- glm(Exercise~Hours.Slept+ Hours.Slept*Breakfast + I(Hours.Slept^2), data=data, family= poisson)
 summary(m.s.i)
 #AIC = 372.53
 # No overdispersion
@@ -125,21 +126,10 @@ The diagnostic plots only look ok for the QQ Normal plot. The variances do not l
 
 
 # Task 3: Results
-Hours of sleep has a significant effect on the number of times and individual exercises (), 
 
-There was no significant interaction between the effects of hours of sleep and breakfast on 
+There was a significant quadratic relationship between the the number of times and individual exercised and hours slept (b±SE = -0.04178 ±0.01812; Z-Value 1,85 = -2.3066; P =0.0211). Note that the parameter estimate is on the log scale.
 
-(χ2 1,85 = 3.9976, p=0.04557). 
-
-
-There was a significant quadratic relationship between the the number of times and individual exercised and hours slept (b±SE = 0.852±0.245; Z-Value 1,85 = -2.3066; P =0.0211).
-
-While the interaction term of Breakfast was not significant in the model prediction, it did significantly improve the model fit (χ2 1 = 3.9976 , P = 0.04557).  
-
-
-est = -0.04178 
-st error = 0.01812
-
+While the interaction term of Breakfast was not significant in the model prediction, it did significantly improve the model fit (χ2 1 = 3.9976 , p = 0.04557).  
 
 
 ```{r}
