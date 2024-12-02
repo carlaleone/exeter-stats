@@ -88,5 +88,8 @@ predicted.modelY
 logit.m.predicted <- b0 + b1*data$Hours.Slept
 predicted.2 <- 1/(1+exp(-logit.psr.predicted))
 
+plot(m.s.i)
 
-
+new_data_predictions <-  data.frame(Hours.Slept = 8, Breakfast = "No")
+predicted.value <- predict(m.s.i, newdata = new_data_predictions, type = "response")
+predicted.value
