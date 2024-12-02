@@ -1,9 +1,9 @@
 ---
-title: "Problem Sheet 1"
+title: "Problem Sheet Answers"
 output:
   word_document: default
-  pdf_document: default
-date: "2024-10-08"
+  html_document: default
+date: "2024-12-01"
 ---
 # Task 1 : Hypothesis
 ## Import data
@@ -22,13 +22,8 @@ We expect individuals to exercise more if they wake up earlier, have breakfast, 
 
 1. Adjust columns to make them the appropriate units and classes.
 ```{r}
-# add other columns
+# adjust columns
 data$avg.commute<- (data$Commute.today + data$Commute.yesterday)/ 2 #average commute of individual
-class(data$Waking.up.time) #character class, so need to convert it to numeric
-data$wakeup<- as.POSIXct(paste("2024-01-01", data$Waking.up.time), format = "%Y-%m-%d %H:%M") #convert character to date and time format
-data$hours.midnight<-  as.numeric(format(data$wakeup, "%H")) + as.numeric(format(data$wakeup, "%M")) / 60 #convert date and time to numeric
-# are there any missing values?
-is.na(data$avg.commute)
 data <- data[!is.na(data$avg.commute),] #remove na from average commute column
 ```
 
@@ -50,11 +45,11 @@ plot(data$Exercise~data$avg.commute)
 ```
 
 
-```{r}
+```{r, eval = FALSE}
 #Check if continuous variables are correlated
 cor.test(data$Hours.Slept,data$avg.commute) 
-#not correlated
-#p = 0.5643, cor = -0.06157292 
+# not correlated
+# p = 0.5643, cor = -0.06157292 
 ```
 
 
@@ -78,12 +73,20 @@ hist(data$Exercise)
 
 3. Create the model
 
+
+ Model  | AIC    | Residual Deviance | Degrees of Freedom |
+|:-------------------------------------------------------|:------|:------------|:-----------|
+| Hours.Slept + Hours.Slept*Breakfast + I(Hours.Slept^2) + avg.commute |374.32 | 72.669 | 84 |
+| Hours.Slept + Hours.Slept*Breakfast + I(Hours.Slept^2) | 372.53 | 72.879| 85 |
+| Hours.Slept + Breakfast + I(Hours.Slept^2)  | 374.53 | 76.877  | 86 |
+
+
 - Starting with the most complex model
 ```{r}
 msi1<- glm(Exercise~Hours.Slept+ Hours.Slept*Breakfast + I(Hours.Slept^2) + avg.commute, data=data, family= poisson)
 summary(msi1)
 anova(msi1, test="Chisq")
-# we can remove average commute
+# p value of average commute = 0.68261  and is the highest p value so we can remove average commute as a predictor.
 ```
 
 - Is the interaction term significant?
@@ -115,14 +118,15 @@ The more complex model, with the interaction term has a lower residual deviance 
 par(mfrow=c(2,2))
 plot(m.s.i)
 ```
-```{r}
-anova(m.s.i, test="Chisq")
-```
+
 
 The diagnostic plots only look ok for the QQ Normal plot. The variances do not look evenly distributed, however, the diagnostic plots for glm are harder to interpret. Therefore, we will still use the more complex model as it is the best fit for the data. So this is the final model:
 
 `glm(Exercise~Hours.Slept*Breakfast + I(Hours.Slept^2), data = data, family = poisson)`
 
+```{r, echo = FALSE}
+summary(m.s.i)
+```
 
 
 # Task 3: Results
@@ -161,4 +165,3 @@ lines(predicted.N2[order(newdata.N$Hours.Slept)] ~
 legend(x="topleft", legend=c("Yes", "No"), pch=19,
 col=c("blue", "red"), lwd=c(1,1), title="Eats Breakfast", cex=0.8)
 ```
-

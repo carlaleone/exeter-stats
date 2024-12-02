@@ -73,3 +73,20 @@ anova(m2, test= "Chisq")
 #Therefore we will use m as our final model.
 
 
+
+b0 <- m.s.i$coefficients[1] # intercept
+b0
+b1 <- m.s.i$coefficients[2] # hours slept
+b2 <- m.s.i$coefficients[3] # breakfast
+b3 <- m.s.i$coefficients[4] # Quadratic term
+b4 <- m.s.i$coefficients[5] # Interaction term
+predicted.model <- predict(m.s.i, type='response') 
+predicted.modelY <- predicted.model[data$Breakfast=="Yes"] 
+predicted.modelN <- predicted.model[data$Breakfast=="No"]
+predicted.modelY
+
+logit.m.predicted <- b0 + b1*data$Hours.Slept
+predicted.2 <- 1/(1+exp(-logit.psr.predicted))
+
+
+

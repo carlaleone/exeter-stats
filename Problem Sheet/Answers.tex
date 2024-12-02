@@ -1,0 +1,594 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={Problem Sheet 1},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Problem Sheet 1}
+\author{}
+\date{\vspace{-2.5em}2024-10-08}
+
+\begin{document}
+\maketitle
+
+\section{Task 1 : Hypothesis}\label{task-1-hypothesis}
+
+\subsection{Import data}\label{import-data}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{setwd}\NormalTok{(}\StringTok{"/Users/carlaleone/Desktop/Exeter/Problem Sheet"}\NormalTok{)}
+\NormalTok{data }\OtherTok{\textless{}{-}} \FunctionTok{read.table}\NormalTok{(}\StringTok{"BIOM4025\_data\_2024.csv"}\NormalTok{, }\AttributeTok{header=}\ConstantTok{TRUE}\NormalTok{, }\AttributeTok{sep =} \StringTok{","}\NormalTok{, }
+                      \AttributeTok{stringsAsFactors =} \ConstantTok{FALSE}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Hypothesis:}\label{hypothesis}
+
+We want to know whether morning routine affects the amount that an
+individual exercises. Average daily commute, wake up time, in terms of
+hours after midnight, and whether an individual has breakfast are not
+are the factors describing morning routine. We expect individuals to
+exercise more if they wake up earlier, have breakfast, and have a
+shorter average commute time.
+
+\section{Task 2: Model}\label{task-2-model}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Adjust columns to make them the appropriate units and classes.
+\end{enumerate}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# add other columns}
+\NormalTok{data}\SpecialCharTok{$}\NormalTok{avg.commute}\OtherTok{\textless{}{-}}\NormalTok{ (data}\SpecialCharTok{$}\NormalTok{Commute.today }\SpecialCharTok{+}\NormalTok{ data}\SpecialCharTok{$}\NormalTok{Commute.yesterday)}\SpecialCharTok{/} \DecValTok{2} \CommentTok{\#average commute of individual}
+\FunctionTok{class}\NormalTok{(data}\SpecialCharTok{$}\NormalTok{Waking.up.time) }\CommentTok{\#character class, so need to convert it to numeric}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "character"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{data}\SpecialCharTok{$}\NormalTok{wakeup}\OtherTok{\textless{}{-}} \FunctionTok{as.POSIXct}\NormalTok{(}\FunctionTok{paste}\NormalTok{(}\StringTok{"2024{-}01{-}01"}\NormalTok{, data}\SpecialCharTok{$}\NormalTok{Waking.up.time), }\AttributeTok{format =} \StringTok{"\%Y{-}\%m{-}\%d \%H:\%M"}\NormalTok{) }\CommentTok{\#convert character to date and time format}
+\NormalTok{data}\SpecialCharTok{$}\NormalTok{hours.midnight}\OtherTok{\textless{}{-}}  \FunctionTok{as.numeric}\NormalTok{(}\FunctionTok{format}\NormalTok{(data}\SpecialCharTok{$}\NormalTok{wakeup, }\StringTok{"\%H"}\NormalTok{)) }\SpecialCharTok{+} \FunctionTok{as.numeric}\NormalTok{(}\FunctionTok{format}\NormalTok{(data}\SpecialCharTok{$}\NormalTok{wakeup, }\StringTok{"\%M"}\NormalTok{)) }\SpecialCharTok{/} \DecValTok{60} \CommentTok{\#convert date and time to numeric}
+\CommentTok{\# are there any missing values?}
+\FunctionTok{is.na}\NormalTok{(data}\SpecialCharTok{$}\NormalTok{avg.commute)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##  [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+## [13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+## [25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE
+## [37] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE
+## [49] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+## [61] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+## [73] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+## [85] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{data }\OtherTok{\textless{}{-}}\NormalTok{ data[}\SpecialCharTok{!}\FunctionTok{is.na}\NormalTok{(data}\SpecialCharTok{$}\NormalTok{avg.commute),] }\CommentTok{\#remove na from average commute column}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Explore variables + Check for correlations or interactions in the
+  predictors:
+\end{enumerate}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Plot Exercise against hours slept}
+\FunctionTok{mean}\NormalTok{(data}\SpecialCharTok{$}\NormalTok{Hours.Slept)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 8.252778
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# mean hours slept = 8.252778}
+\FunctionTok{plot}\NormalTok{(data}\SpecialCharTok{$}\NormalTok{Exercise}\SpecialCharTok{\textasciitilde{}}\NormalTok{data}\SpecialCharTok{$}\NormalTok{Hours.Slept)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Answers_files/figure-latex/unnamed-chunk-3-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\#The data seems to be centered around the mean, so I would expect the model to have a curved line and peak at the mean.Therefore, I will consider adding a square term. }
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Plot Exercise against average commute}
+\FunctionTok{plot}\NormalTok{(data}\SpecialCharTok{$}\NormalTok{Exercise}\SpecialCharTok{\textasciitilde{}}\NormalTok{data}\SpecialCharTok{$}\NormalTok{avg.commute)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Answers_files/figure-latex/unnamed-chunk-4-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Again,no obvious relationships from the data, but could be leaning towards a positive slope.}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\#Check if continuous variables are correlated}
+\FunctionTok{cor.test}\NormalTok{(data}\SpecialCharTok{$}\NormalTok{Hours.Slept,data}\SpecialCharTok{$}\NormalTok{avg.commute) }
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+##  Pearson's product-moment correlation
+## 
+## data:  data$Hours.Slept and data$avg.commute
+## t = -0.5787, df = 88, p-value = 0.5643
+## alternative hypothesis: true correlation is not equal to 0
+## 95 percent confidence interval:
+##  -0.2652814  0.1473977
+## sample estimates:
+##         cor 
+## -0.06157292
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\#not correlated}
+\CommentTok{\#p = 0.5643, cor = {-}0.06157292 }
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\#Is there a potential relationship between the categorical and continuous predictors?}
+\FunctionTok{print}\NormalTok{(}\FunctionTok{aggregate}\NormalTok{(data}\SpecialCharTok{$}\NormalTok{Hours.Slept, }\AttributeTok{by=}\FunctionTok{list}\NormalTok{(data}\SpecialCharTok{$}\NormalTok{Breakfast), mean, }\AttributeTok{na.rm =}\NormalTok{T))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##   Group.1        x
+## 1      No 7.903333
+## 2     Yes 8.359130
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Visualize the table with a box plot}
+\FunctionTok{boxplot}\NormalTok{(Hours.Slept}\SpecialCharTok{\textasciitilde{}}\NormalTok{Breakfast, }\AttributeTok{data=}\NormalTok{data)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Answers_files/figure-latex/unnamed-chunk-7-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\#Seems like people who eat breakfast sleep longer.}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{hist}\NormalTok{(data}\SpecialCharTok{$}\NormalTok{Exercise)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Answers_files/figure-latex/unnamed-chunk-8-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# The response is not normal, but it is count data so should be modeled in a poisson distribution}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Create the model
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  Starting with the most complex model
+\end{itemize}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{msi1}\OtherTok{\textless{}{-}} \FunctionTok{glm}\NormalTok{(Exercise}\SpecialCharTok{\textasciitilde{}}\NormalTok{Hours.Slept}\SpecialCharTok{+}\NormalTok{ Hours.Slept}\SpecialCharTok{*}\NormalTok{Breakfast }\SpecialCharTok{+} \FunctionTok{I}\NormalTok{(Hours.Slept}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{) }\SpecialCharTok{+}\NormalTok{ avg.commute, }\AttributeTok{data=}\NormalTok{data, }\AttributeTok{family=}\NormalTok{ poisson)}
+\FunctionTok{summary}\NormalTok{(msi1)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## glm(formula = Exercise ~ Hours.Slept + Hours.Slept * Breakfast + 
+##     I(Hours.Slept^2) + avg.commute, family = poisson, data = data)
+## 
+## Coefficients:
+##                           Estimate Std. Error z value Pr(>|z|)  
+## (Intercept)               0.069518   1.088053   0.064   0.9491  
+## Hours.Slept               0.493655   0.273179   1.807   0.0708 .
+## BreakfastYes             -1.332075   0.774392  -1.720   0.0854 .
+## I(Hours.Slept^2)         -0.042225   0.018163  -2.325   0.0201 *
+## avg.commute               0.002164   0.004701   0.460   0.6452  
+## Hours.Slept:BreakfastYes  0.190818   0.096922   1.969   0.0490 *
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## (Dispersion parameter for poisson family taken to be 1)
+## 
+##     Null deviance: 84.306  on 89  degrees of freedom
+## Residual deviance: 72.669  on 84  degrees of freedom
+## AIC: 374.32
+## 
+## Number of Fisher Scoring iterations: 5
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{anova}\NormalTok{(msi1, }\AttributeTok{test=}\StringTok{"Chisq"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Analysis of Deviance Table
+## 
+## Model: poisson, link: log
+## 
+## Response: Exercise
+## 
+## Terms added sequentially (first to last)
+## 
+## 
+##                       Df Deviance Resid. Df Resid. Dev Pr(>Chi)  
+## NULL                                     89     84.306           
+## Hours.Slept            1   0.8624        88     83.444  0.35307  
+## Breakfast              1   2.8629        87     80.581  0.09065 .
+## I(Hours.Slept^2)       1   3.7039        86     76.877  0.05429 .
+## avg.commute            1   0.1672        85     76.710  0.68261  
+## Hours.Slept:Breakfast  1   4.0411        84     72.669  0.04441 *
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# we can remove average commute}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{itemize}
+\tightlist
+\item
+  Is the interaction term significant? First, model without interaction
+\end{itemize}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{m.s}\OtherTok{\textless{}{-}} \FunctionTok{glm}\NormalTok{(Exercise}\SpecialCharTok{\textasciitilde{}}\NormalTok{Hours.Slept }\SpecialCharTok{+}\NormalTok{ Breakfast}\SpecialCharTok{+} \FunctionTok{I}\NormalTok{(Hours.Slept}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{), }\AttributeTok{data=}\NormalTok{data, }\AttributeTok{family=}\NormalTok{ poisson)}
+\CommentTok{\# without interaction}
+\FunctionTok{summary}\NormalTok{(m.s)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## glm(formula = Exercise ~ Hours.Slept + Breakfast + I(Hours.Slept^2), 
+##     family = poisson, data = data)
+## 
+## Coefficients:
+##                  Estimate Std. Error z value Pr(>|z|)  
+## (Intercept)      -0.24702    1.08274  -0.228   0.8195  
+## Hours.Slept       0.44903    0.27135   1.655   0.0980 .
+## BreakfastYes      0.19209    0.12886   1.491   0.1360  
+## I(Hours.Slept^2) -0.03089    0.01687  -1.831   0.0671 .
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## (Dispersion parameter for poisson family taken to be 1)
+## 
+##     Null deviance: 84.306  on 89  degrees of freedom
+## Residual deviance: 76.877  on 86  degrees of freedom
+## AIC: 374.53
+## 
+## Number of Fisher Scoring iterations: 5
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# AIC = 374.53}
+\CommentTok{\# No overdispersion}
+\end{Highlighting}
+\end{Shaded}
+
+Model with interaction
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{m.s.i}\OtherTok{\textless{}{-}} \FunctionTok{glm}\NormalTok{(Exercise}\SpecialCharTok{\textasciitilde{}}\NormalTok{Hours.Slept}\SpecialCharTok{+}\NormalTok{ Hours.Slept}\SpecialCharTok{*}\NormalTok{Breakfast }\SpecialCharTok{+} \FunctionTok{I}\NormalTok{(Hours.Slept}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{), }\AttributeTok{data=}\NormalTok{data, }\AttributeTok{family=}\NormalTok{ poisson)}
+\FunctionTok{summary}\NormalTok{(m.s.i)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## glm(formula = Exercise ~ Hours.Slept + Hours.Slept * Breakfast + 
+##     I(Hours.Slept^2), family = poisson, data = data)
+## 
+## Coefficients:
+##                          Estimate Std. Error z value Pr(>|z|)  
+## (Intercept)               0.14819    1.07038   0.138   0.8899  
+## Hours.Slept               0.48511    0.27184   1.785   0.0743 .
+## BreakfastYes             -1.31249    0.77351  -1.697   0.0897 .
+## I(Hours.Slept^2)         -0.04178    0.01812  -2.306   0.0211 *
+## Hours.Slept:BreakfastYes  0.18981    0.09693   1.958   0.0502 .
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## (Dispersion parameter for poisson family taken to be 1)
+## 
+##     Null deviance: 84.306  on 89  degrees of freedom
+## Residual deviance: 72.879  on 85  degrees of freedom
+## AIC: 372.53
+## 
+## Number of Fisher Scoring iterations: 5
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\#AIC = 372.53}
+\CommentTok{\# No overdispersion}
+\end{Highlighting}
+\end{Shaded}
+
+Compare the two models in an analysis of deviance:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{anova}\NormalTok{(m.s,m.s.i,}\AttributeTok{test =}\StringTok{"Chisq"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Analysis of Deviance Table
+## 
+## Model 1: Exercise ~ Hours.Slept + Breakfast + I(Hours.Slept^2)
+## Model 2: Exercise ~ Hours.Slept + Hours.Slept * Breakfast + I(Hours.Slept^2)
+##   Resid. Df Resid. Dev Df Deviance Pr(>Chi)  
+## 1        86     76.877                       
+## 2        85     72.879  1   3.9976  0.04557 *
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+\end{verbatim}
+
+The more complex model, with the interaction term has a lower residual
+deviance and is a significantly better fit of the data p = 0.04557. It
+is more complex, but it is also better at modelling the data and has a
+lower AIC. Both models have a residual deviance below the residual
+degrees of freedom, meaning they are not overdispersed.
+
+\begin{itemize}
+\tightlist
+\item
+  Checking diagnostic plots
+\end{itemize}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{par}\NormalTok{(}\AttributeTok{mfrow=}\FunctionTok{c}\NormalTok{(}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{))}
+\FunctionTok{plot}\NormalTok{(m.s.i)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Answers_files/figure-latex/unnamed-chunk-13-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{anova}\NormalTok{(m.s.i, }\AttributeTok{test=}\StringTok{"Chisq"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Analysis of Deviance Table
+## 
+## Model: poisson, link: log
+## 
+## Response: Exercise
+## 
+## Terms added sequentially (first to last)
+## 
+## 
+##                       Df Deviance Resid. Df Resid. Dev Pr(>Chi)  
+## NULL                                     89     84.306           
+## Hours.Slept            1   0.8624        88     83.444  0.35307  
+## Breakfast              1   2.8629        87     80.581  0.09065 .
+## I(Hours.Slept^2)       1   3.7039        86     76.877  0.05429 .
+## Hours.Slept:Breakfast  1   3.9976        85     72.879  0.04557 *
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+\end{verbatim}
+
+The diagnostic plots only look ok for the QQ Normal plot. The variances
+do not look evenly distributed, however, the diagnostic plots for glm
+are harder to interpret. Therefore, we will still use the more complex
+model as it is the best fit for the data. So this is the final model:
+
+\texttt{glm(Exercise\textasciitilde{}Hours.Slept*Breakfast\ +\ I(Hours.Slept\^{}2),\ data\ =\ data,\ family\ =\ poisson)}
+
+\section{Task 3: Results}\label{task-3-results}
+
+There was a significant quadratic relationship between the the number of
+times and individual exercised and hours slept (b±SE = -0.04178
+±0.01812; Z-Value 1,85 = -2.3066; P =0.0211). Note that the parameter
+estimate is on the log scale.
+
+While the interaction term of Breakfast was not significant in the model
+prediction, it did significantly improve the model fit in an analysis of
+deviance (χ2 1 = 3.9976 , p = 0.04557).
+
+\section{Task 4: Plot}\label{task-4-plot}
+
+First create a new data fram for the predicted values to ensure a smooth
+line in the final plot.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{newdata.Y }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}\AttributeTok{Breakfast=}\FunctionTok{rep}\NormalTok{(}\StringTok{"Yes"}\NormalTok{, }\DecValTok{100}\NormalTok{),}
+                     \AttributeTok{Hours.Slept=}\FunctionTok{seq}\NormalTok{(}\FunctionTok{min}\NormalTok{(data}\SpecialCharTok{$}\NormalTok{Hours.Slept[data}\SpecialCharTok{$}\NormalTok{Breakfast}\SpecialCharTok{==}\StringTok{"Yes"}\NormalTok{]),}
+                                \FunctionTok{max}\NormalTok{(data}\SpecialCharTok{$}\NormalTok{Hours.Slept[data}\SpecialCharTok{$}\NormalTok{Breakfast}\SpecialCharTok{==}\StringTok{"Yes"}\NormalTok{]),}
+                                                 \AttributeTok{length.out=}\DecValTok{100}\NormalTok{))}
+
+\NormalTok{newdata.N }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}\AttributeTok{Breakfast=}\FunctionTok{rep}\NormalTok{(}\StringTok{"No"}\NormalTok{, }\DecValTok{100}\NormalTok{),}
+                         \AttributeTok{Hours.Slept=}\FunctionTok{seq}\NormalTok{(}\FunctionTok{min}\NormalTok{(data}\SpecialCharTok{$}\NormalTok{Hours.Slept[data}\SpecialCharTok{$}\NormalTok{Breakfast}\SpecialCharTok{==}\StringTok{"No"}\NormalTok{]),}
+                                     \FunctionTok{max}\NormalTok{(data}\SpecialCharTok{$}\NormalTok{Hours.Slept[data}\SpecialCharTok{$}\NormalTok{Breakfast}\SpecialCharTok{==}\StringTok{"No"}\NormalTok{]),}
+                                                  \AttributeTok{length.out=}\DecValTok{100}\NormalTok{))}
+
+\NormalTok{predicted.Y2 }\OtherTok{\textless{}{-}} \FunctionTok{predict}\NormalTok{(m.s.i, newdata.Y, }\AttributeTok{type=}\StringTok{\textquotesingle{}response\textquotesingle{}}\NormalTok{)}
+\NormalTok{predicted.N2 }\OtherTok{\textless{}{-}} \FunctionTok{predict}\NormalTok{(m.s.i, newdata.N, }\AttributeTok{type=}\StringTok{\textquotesingle{}response\textquotesingle{}}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+Now plot using the new data:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{plot}\NormalTok{(Exercise }\SpecialCharTok{\textasciitilde{}}\NormalTok{ Hours.Slept, }\AttributeTok{data=}\NormalTok{data, }\AttributeTok{pch=}\ConstantTok{NA}\NormalTok{, }\AttributeTok{xlab=}\StringTok{"Hours of Sleep"}\NormalTok{, }\AttributeTok{ylab=}\StringTok{"Exercise"}\NormalTok{)}
+\FunctionTok{points}\NormalTok{(Exercise }\SpecialCharTok{\textasciitilde{}}\NormalTok{ Hours.Slept, }\AttributeTok{data=}\NormalTok{data[data}\SpecialCharTok{$}\NormalTok{Breakfast}\SpecialCharTok{==}\StringTok{"Yes"}\NormalTok{, ], }\AttributeTok{pch=}\DecValTok{19}\NormalTok{, }\AttributeTok{col=}\StringTok{"blue"}\NormalTok{) }
+\FunctionTok{points}\NormalTok{(Exercise }\SpecialCharTok{\textasciitilde{}}\NormalTok{ Hours.Slept, }\AttributeTok{data=}\NormalTok{data[data}\SpecialCharTok{$}\NormalTok{Breakfast}\SpecialCharTok{==}\StringTok{"No"}\NormalTok{, ], }\AttributeTok{pch=}\DecValTok{19}\NormalTok{, }\AttributeTok{col=}\StringTok{"red"}\NormalTok{)}
+\FunctionTok{lines}\NormalTok{(predicted.Y2[}\FunctionTok{order}\NormalTok{(newdata.Y}\SpecialCharTok{$}\NormalTok{Hours.Slept)] }\SpecialCharTok{\textasciitilde{}}
+        \FunctionTok{sort}\NormalTok{(newdata.Y}\SpecialCharTok{$}\NormalTok{Hours.Slept), }\AttributeTok{lwd=}\FloatTok{1.5}\NormalTok{, }\AttributeTok{col=}\StringTok{"blue"}\NormalTok{)}
+\FunctionTok{lines}\NormalTok{(predicted.N2[}\FunctionTok{order}\NormalTok{(newdata.N}\SpecialCharTok{$}\NormalTok{Hours.Slept)] }\SpecialCharTok{\textasciitilde{}}
+        \FunctionTok{sort}\NormalTok{(newdata.N}\SpecialCharTok{$}\NormalTok{Hours.Slept), }\AttributeTok{lwd=}\FloatTok{1.5}\NormalTok{, }\AttributeTok{col=}\StringTok{"red"}\NormalTok{)}
+\FunctionTok{legend}\NormalTok{(}\AttributeTok{x=}\StringTok{"topleft"}\NormalTok{, }\AttributeTok{legend=}\FunctionTok{c}\NormalTok{(}\StringTok{"Yes"}\NormalTok{, }\StringTok{"No"}\NormalTok{), }\AttributeTok{pch=}\DecValTok{19}\NormalTok{,}
+\AttributeTok{col=}\FunctionTok{c}\NormalTok{(}\StringTok{"blue"}\NormalTok{, }\StringTok{"red"}\NormalTok{), }\AttributeTok{lwd=}\FunctionTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{,}\DecValTok{1}\NormalTok{), }\AttributeTok{title=}\StringTok{"Eats Breakfast"}\NormalTok{, }\AttributeTok{cex=}\FloatTok{0.8}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Answers_files/figure-latex/unnamed-chunk-16-1.pdf}
+
+\end{document}
