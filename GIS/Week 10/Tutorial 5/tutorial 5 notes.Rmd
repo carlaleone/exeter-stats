@@ -134,9 +134,79 @@ fire_buffer<- buffer(fires, 1000)
 rnp_plot +geom_spatvector(data=fire_buffer)
 #rasterize onto the forest grid
 
-fire_bufgrid<- rasterize(fire_buffer, forest)
+fire_bufgrid<- rasterize(fire_buffer, forest, sum=T)
 #dont use the function argument anyomore, because these ar no longer points but polygons
 
-rnp_plot +geom_spatvector(data=fire_buffer)
+fire_bufgrid[fire_bufgrid==0] <- NA
+
+ggplot()+
+  geom_spatraster(data = fire_bufgrid)+
+  geom_spatvector(data=rnp, fill = "transparent") +
+  geom_spatvector(data = buffer, fill = "transparent", linetype = "dashed") +
+  scale_fill_continuous_sequential("Heat", na.value = "transparent")
+
+  
+
+```
+
+Using distance grids: distance of each cell on a raster to the nearest point on a vector feature. measuring distance of forest filled cells to nearest fire:
+
+# distance to fires
+```{r}
+fire_distance<- distance(forest, fires)
+plot(fire_distance) 
+# we want to mask this to just the forested pixels in the raster
+```
+
+Need to use the mask function:
+```{r}
+fire_distance<- mask(fire_distance, forest) #sets any pixels in fire distance that dont contain forest to NA. 
+# so only forested pixels now
+
+plot(fire_distance) # each forested cell, how far it was from closest fire. 
+```
+# highlight areas that fall within 1 km of a fire
+
+first duplicate fire distance
+```{r}
+d<- fire_distance
+d[d<= 1000] <- 1
+d[d> 1000] <- 2
+plot(d)
+# now 1s and 2s are the data. We can no make this a categorical raster by setting the levels, which we do by making a data frame
+
+levels(d) <- data.frame(id = 1:2, label = c("< 1km from fire", "> 1km from fire"))
+plot(d)
+```
+
+plot with ggplot
+```{r}
+ggplot()+
+  geom_spatraster(data = d)+
+  geom_spatvector(data=rnp, fill = "transparent") +
+  geom_spatvector(data = buffer, fill = "transparent", linetype = "dashed") +
+  geom_spatvector(data=fires, size = 0.1) +
+  scale_fill_manual (values = c("orange", "forestgreen"), na.translate =FALSE) #categorical so manual
+
+```
+
+Now measuring proportion  of forested area within 1km, inside and outside of national park:
+```{r}
+# first mask the raster to inside and outside the park:
+rnp_forest<- mask (d, rnp) #area just in the park
+buf_forest<- mask(d,rnp, inverse = TRUE) # Only pixels outside the park
+
+#now make an at risk layer for each zone, duplicate layers:
+rnp_risk <- rnp_forest
+rnp_risk[rnp_risk==2]<- NA #ANY OUTSIDE OF 1KM ZONE IS NA
+
+buffer_risk<- buf_forest
+buffer_risk[buffer_risk==2]<- NA
+#any cell > 1km is NA
+
+#now measure areas:
+expanse(buffer_risk, unit = "km")/expanse(buf_forest, unit="km")
+expanse(rnp_risk, unit = "km")/expanse(rnp_forest, unit="km")
+# result is in percentages
 ```
 
