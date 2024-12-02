@@ -93,3 +93,8 @@ plot(m.s.i)
 new_data_predictions <-  data.frame(Hours.Slept = 8, Breakfast = "No")
 predicted.value <- predict(m.s.i, newdata = new_data_predictions, type = "response")
 predicted.value
+
+
+anova(m.s.i, test ="Chisq")
+
+summary(m.s)

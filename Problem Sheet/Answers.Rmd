@@ -151,7 +151,7 @@ predicted.N2 <- predict(m.s.i, newdata.N, type='response')
 
 Now plot using the new data:
 ```{r}
-plot(Exercise ~ Hours.Slept, data=data, pch=NA, xlab="Hours of Sleep", ylab="Exercise")
+plot(Exercise ~ Hours.Slept, data=data, pch=NA, xlab="Hours of Sleep", ylab="Exercise (Times per week)")
 points(Exercise ~ Hours.Slept, data=data[data$Breakfast=="Yes", ], pch=19, col="blue") 
 points(Exercise ~ Hours.Slept, data=data[data$Breakfast=="No", ], pch=19, col="red")
 lines(predicted.Y2[order(newdata.Y$Hours.Slept)] ~
