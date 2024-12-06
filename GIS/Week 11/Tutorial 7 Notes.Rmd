@@ -1,0 +1,62 @@
+---
+title: "Tutorial 7 Notes"
+output: html_document
+date: "2024-12-06"
+---
+# Making Presentable Maps
+
+## Load packages
+```{r}
+library(sf)
+library(tidyverse)
+library(terra)
+library(tidyterra)
+library(colorspace)
+
+getwd()
+setwd("/Users/carlaleone/Desktop/Exeter/GIS/Week 11")
+
+dem<- rast("data/dem.tif")
+ladakh<- st_read("data/ladakh.gpkg")
+```
+First plots
+```{r}
+dem_plot<- ggplot() +
+  geom_spatraster(data=dem)+
+  geom_sf(data = ladakh, fill = "transparent") +
+  scale_fill_hypso_c(palette = "wiki-2.0_hypso")
+```
+
+Add theme:
+```{r}
+dem_plot +
+  theme(panel.border = element_rect(colour = "black",
+                                    fill ="transparent"),
+        panel.background = element_blank(),
+        panel.grid = element_line(colour = "grey50",
+                                  linetype = "dashed")) 
+```
+
+Each part you can edit in a plot is an element:
+- rectangular (panel border)
+- line elements (axis, grid, ticks)
+- text elements
+
+
+Can also use preset themes:
+theme_void
+theme_classic
+theme_bw
+
+You can edit these preset themes as well.
+
+```{r}
+dem_plot +
+  coord_sf(expand = F) # dont expand axis limits
+
+#or can zoom in/out
+dem_plot +
+  coord_sf(xlim = c(77,78), ylim = c(34,35),
+           label_graticule  = "N") # Where you want the coord ticks, here on the north side.
+```
+
