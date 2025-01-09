@@ -77,7 +77,8 @@ plot1<-
     legend.position = "none",
     axis.title = element_text(size = 12, face = "bold"),
     panel.grid = element_blank()
-    )
+    ) +
+  ylim(0,10)
   
 
 plot1
