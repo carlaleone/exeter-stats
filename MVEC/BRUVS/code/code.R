@@ -47,14 +47,17 @@ plot2
 
 ## Relative abundance analysis ----
 lm_total_abundance<- lm(maxN~habitat, data = d_maxN)
+kruskal.test(maxN ~ habitat, data = d_maxN)
+# x2 = 3.4747, df = 2, p = 0.176
 summary(lm_total_abundance)
+plot(lm_total_abundance)
 # not significant p = 0.2719, f = 1.312, df = 2,181
 ## Calculate richness ----
-d_sp_richness<- d %>%
+d_sp_richness1<- d %>%
   group_by(code, habitat) %>%
   summarise(sp_richness = length(unique(species_common)))
 
-d_sp_richness<- d_sp_richness%>%
+d_sp_richness<- d_sp_richness1%>%
   group_by(habitat) %>%
   summarise(n=n(), mean = mean(sp_richness), sd = sd(sp_richness), se=sd/sqrt(n))
 
@@ -83,11 +86,19 @@ plot1<-
 
 plot1
 
+sample_size <- table(d_maxN$habitat)
+print(sample_size)
 
+total_maxN_per_video <- d_maxN %>%
+  group_by(code, habitat) %>%
+  summarise(total_maxN = sum(maxN, na.rm = TRUE))
+
+View(total_maxN_per_video)
 
 ## Species richness analysis ----
 
-lm_total_richness<- aov(sp_richness~ habitat, data = d_sp_richness)
+lm_total_richness<- aov(log(sp_richness)~ habitat, data = d_sp_richness1)
+plot(lm_total_richness)
 summary(lm_total_richness)
 # p < 0.01, f = 13.77, df = 2 and 27
 
