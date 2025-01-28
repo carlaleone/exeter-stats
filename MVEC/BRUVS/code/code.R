@@ -216,6 +216,9 @@ relative_abundance_cod <- d %>%
 relative_abundance_cod
 View(cod_maxN)
 
+sample_size <- table(cod_maxN$habitat)
+print(sample_size)
+
 plot4<- 
   ggplot(cod_maxN, aes(x = habitat, y = maxN, fill= habitat)) +
   geom_boxplot(outlier.shape = NA) +
