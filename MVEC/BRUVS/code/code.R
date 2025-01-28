@@ -214,10 +214,13 @@ relative_abundance_cod <- d %>%
   mutate(Relative_Abundance = Total_Max_N / sum(Total_Max_N))
 
 relative_abundance_cod
+View(cod_maxN)
 
 plot4<- 
   ggplot(cod_maxN, aes(x = habitat, y = maxN, fill= habitat)) +
   geom_boxplot(outlier.shape = NA) +
+  geom_jitter(aes(colour = habitat),shape = 21, colour = "black", alpha = 0.6)+
+  scale_color_manual(values = c("Reef" = "forestgreen", "Sand" = "brown", "Seagrass" = "skyblue"))+
   scale_fill_manual(values = c("Reef" = "forestgreen", "Sand" = "brown", "Seagrass" = "skyblue")) +
   labs(
     x = "Habitat type",
