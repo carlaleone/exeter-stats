@@ -29,11 +29,14 @@ maxN2<- d_maxN %>%
   summarize(max.n = sum(maxN))
 
 View(maxN2)
-
+sample_size <- table(d_maxN$habitat)
+print(sample_size)
 ## Relative abundance plot ----
 plot2<- 
   ggplot(d_maxN, aes(x = habitat, y = maxN, fill= habitat)) +
   geom_boxplot(outlier.shape = NA) +
+  geom_jitter(aes(colour = habitat),shape = 21, colour = "black", alpha = 0.6)+
+  scale_color_manual(values = c("Reef" = "forestgreen", "Sand" = "brown", "Seagrass" = "skyblue"))+
   scale_fill_manual(values = c("Reef" = "forestgreen", "Sand" = "brown", "Seagrass" = "skyblue")) +
   labs(
     x = "Habitat type",
@@ -45,7 +48,7 @@ plot2<-
     axis.title = element_text(size = 12, face = "bold"),
     panel.grid = element_blank()
   ) +
-  ylim(0,7)
+  ylim(0,25)
 
 
 plot2
