@@ -264,3 +264,38 @@ plot4
 
 # View the result
 print(relative_abundance_cod)
+
+## Top species per habitat ----
+top_species <- d_maxN %>%
+  group_by(habitat, species_common) %>%
+  summarise(n=n(), avg_abundance = mean(maxN, na.rm = TRUE), sd = sd(maxN), se=sd/sqrt(n)) %>%  # Summing abundance for each species in each habitat
+  arrange(habitat, desc(avg_abundance)) %>%  # Sorting by habitat and abundance (descending)
+  group_by(habitat) %>%  # Grouping by habitat to select top 5 per habitat
+  slice_head(n = 5) %>%
+  ungroup()
+
+
+View(top_species)
+
+ggplot(top_species, aes(x = reorder(species_common, avg_abundance), y = avg_abundance, fill = habitat)) +
+  geom_bar(stat = "identity", show.legend = FALSE) +
+  geom_errorbar(
+    aes(ymin = avg_abundance - se, ymax = avg_abundance + se),  # Error bars show +/- 1 standard error
+    width = 0.2,  # Adjust the width of the error bars
+    color = "black"  # Color of the error bars
+  ) +
+  facet_wrap(~ habitat, scales = "free_x") +  # Separate plots for each habitat
+  labs(
+    x = "Species",
+    y = "Relative Abundance (MaxN)") +
+  scale_fill_manual(values = c("Reef" = "forestgreen", "Sand" = "brown", "Seagrass" = "skyblue")) +  # Color for each habitat
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+    axis.title = element_text(size = 12, face = "bold"),
+    strip.text = element_text(size = 12, face = "bold")
+  )
+
+
+
+Voew()
