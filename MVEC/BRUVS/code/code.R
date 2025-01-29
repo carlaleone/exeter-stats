@@ -140,9 +140,18 @@ cod_richness1<- d %>%
   filter(commercial_group== "Cod likes") %>%
   group_by(code, habitat) %>%
   summarise(sp_richness = length(unique(species_common)))
-View(cod_richness)
 
-cod_richness<- cod_richness1%>%
+View(cod_richness2)
+
+all_sites <- d %>%
+  distinct(code, habitat)
+
+cod_richness2<- all_sites %>%
+  left_join(cod_richness1, by=c("code", "habitat")) %>%
+  mutate(sp_richness = replace_na(sp_richness, 0))
+  
+
+cod_richness<- cod_richness2%>%
   group_by(habitat) %>%
   summarise(n=n(), mean = mean(sp_richness), sd = sd(sp_richness), se=sd/sqrt(n))
 
@@ -158,7 +167,7 @@ plot3<-
   scale_color_manual(values = c("Reef" = "forestgreen", "Sand" = "brown", "Seagrass" = "skyblue")) +
   labs(
     x = "Habitat type",
-    y = "Cod species richness (Mean +/- SE)"
+    y = "Cod-like species richness (Mean +/- SE)"
   ) +
   theme_bw() +
   theme(
@@ -171,15 +180,19 @@ plot3
 
 ## Cod richness analysis ----
 View(cod_richness1)
-lm_cod_richness<- lm(log(sp_richness)~ habitat, data = cod_richness1)
+lm_cod_richness<- lm(sp_richness~ habitat, data = cod_richness2)
 plot(lm_cod_richness)
 summary(lm_cod_richness)
 # Not significant p = 0.2464, f = 1.54, df = 2, 15
 
 # kruskal
-kruskal.test(sp_richness~habitat, data = cod_richness1)
-#p = 0.1107, x2 = 4.4012, df = 2
+kruskal.test(sp_richness~habitat, data = cod_richness2)
+#p = 0.04, x2 = 6.179, df = 2
 
+dunn.test(cod_richness2$sp_richness, cod_richness2$habitat, method = "bonferroni")
+
+sample_size <- table(cod_richness1$habitat)
+print(sample_size)
 
 ## cod relative abundance ----
 cod_maxN<- d %>%
@@ -187,14 +200,25 @@ cod_maxN<- d %>%
   group_by(code, habitat, species_common) %>%
   summarise(maxN = max(max_n))
 View(cod_maxN)
+all_sites <- d %>%
+  distinct(code, habitat)
 
+cod_maxN2<- all_sites %>%
+  left_join(cod_maxN, by=c("code", "habitat")) %>%
+  mutate(maxN = replace_na(maxN, 0))
+
+cod_maxN2 <- cod_maxN2 %>%
+  mutate(species_common = ifelse(is.na(species_common), "cod", species_common))
+
+View(cod_maxN2)
+View(cod_richness)
 ## Cod relative abundance analysis ----
 lm_cod_abundance <- aov(maxN ~ habitat, data = cod_maxN)
 summary(lm_cod_abundance)
 plot(lm_cod_abundance)
 TukeyHSD(lm_cod_abundance)
 
-kruskal.test(maxN ~ habitat, data = cod_maxN)
+kruskal.test(maxN ~ habitat, data = cod_maxN2)
 # p = 0.06
 dunn.test(cod_maxN$maxN, cod_maxN$habitat, method = "bonferroni")
 # no significant difference, but reef seems higher than sand. 
@@ -227,7 +251,7 @@ plot4<-
   scale_fill_manual(values = c("Reef" = "forestgreen", "Sand" = "brown", "Seagrass" = "skyblue")) +
   labs(
     x = "Habitat type",
-    y = "Cod Species Relative Abundance (MaxN)") +
+    y = "Cod-like Species Relative Abundance (MaxN)") +
   theme_bw() +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1, face = "italic"),
