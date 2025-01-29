@@ -54,10 +54,25 @@ plot2<-
 plot2
 
 ## Relative abundance analysis ----
-lm_total_abundance<- lm(maxN~habitat, data = d_maxN)
+
+#glm
+lm_total_abundance<- glm(maxN~habitat, data = d_maxN, family = quasipoisson)
+lm_bare<- update(lm_total_abundance, .~. -habitat)
+
+summary(lm_total_abundance)
+anova( lm_bare,lm_total_abundance, test = 'F')
+drop1(lm_total_abundance)
+summary
+install.packages("emmeans")
+library(emmeans)
+
+# all post-hoc comparisons:
+pairs(emmeans(lm_total_abundance, ~ habitat))
+
+#non parametric
 kruskal.test(maxN ~ habitat, data = d_maxN)
 # x2 = 3.4747, df = 2, p = 0.176
-summary(lm_total_abundance)
+
 plot(lm_total_abundance)
 # not significant p = 0.2719, f = 1.312, df = 2,181
 ## Calculate richness ----
@@ -104,10 +119,21 @@ total_maxN_per_video <- d_maxN %>%
 View(total_maxN_per_video)
 
 ## Species richness analysis ----
+lm_richness<- glm(sp_richness~habitat, data = d_sp_richness1, family = poisson)
+summary(lm_richness)
+lmr_bare<- update(lm_richness, .~. -habitat)
+anova( lmr_bare,lm_richness, test = 'Chisq')
+drop1(lm_total_abundance)
+summary
+install.packages("emmeans")
+library(emmeans)
 
+# all post-hoc comparisons:
+pairs(emmeans(lm_richness, ~ habitat))
 lm_total_richness<- aov(sp_richness~ habitat, data = d_sp_richness1)
 plot(lm_total_richness)
 
+hist(d_sp_richness1$sp_richness)
 summary(lm_total_richness)
 # p < 0.01, f = 13.77, df = 2 and 27
 
@@ -133,7 +159,7 @@ summary(dunn.test(d_sp_richness1$sp_richness, d_sp_richness1$habitat, method = "
 #            0.0009*
   #Seagrass |   3.294736  | -0.128700
              #   0.0015*  |   1.0000
-
+TukeyHSD()
 
 ## Cod species richness----
 cod_richness1<- d %>%
@@ -155,7 +181,7 @@ cod_richness<- cod_richness2%>%
   group_by(habitat) %>%
   summarise(n=n(), mean = mean(sp_richness), sd = sd(sp_richness), se=sd/sqrt(n))
 
-View(cod_richness)
+View(cod_richness2)
 
 
 ## Cod species richness plot ----
@@ -179,6 +205,20 @@ plot3<-
 plot3
 
 ## Cod richness analysis ----
+# glm
+hist(cod_richness2$sp_richness)
+lm_cod_richness<- glm(sp_richness~habitat, data = cod_richness2, family = poisson)
+summary(lm_cod_richness)
+lmcr_bare<- update(lm_cod_richness, .~. -habitat)
+anova( lmcr_bare,lm_cod_richness, test = 'Chisq')
+drop1(lm_total_abundance)
+summary
+install.packages("emmeans")
+library(emmeans)
+
+# all post-hoc comparisons:
+pairs(emmeans(lm_richness, ~ habitat)
+
 View(cod_richness1)
 lm_cod_richness<- lm(sp_richness~ habitat, data = cod_richness2)
 plot(lm_cod_richness)
@@ -211,8 +251,22 @@ cod_maxN2 <- cod_maxN2 %>%
   mutate(species_common = ifelse(is.na(species_common), "cod", species_common))
 
 View(cod_maxN2)
-View(cod_richness)
+View(cod_maxN)
 ## Cod relative abundance analysis ----
+#glm
+lm_cod_abundance<- glm(maxN~habitat, data = cod_maxN, family = poisson)
+summary(lm_cod_abundance)
+lmca_bare<- update(lm_cod_abundance, .~. -habitat)
+anova( lmca_bare,lm_cod_abundance, test = 'Chisq')
+drop1(lm_total_abundance)
+summary
+install.packages("emmeans")
+library(emmeans)
+
+# all post-hoc comparisons:
+pairs(emmeans(lm_richness, ~ habitat)
+      
+
 lm_cod_abundance <- aov(maxN ~ habitat, data = cod_maxN)
 summary(lm_cod_abundance)
 plot(lm_cod_abundance)
