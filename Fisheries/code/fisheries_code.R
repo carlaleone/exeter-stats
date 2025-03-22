@@ -196,15 +196,43 @@ ggplot(scotland, aes(x = factor(year), y = `value/quantity`)) +
 
 ## Scotland Effort ----
 scotland$small.big.boat.ration<- scotland$under10_n/scotland$over10_n
-scotland$small.big.gw.ratio<- scotland$under10_GT/scotland$over10_GT
+scotland$small.big.gt.ratio<- scotland$under10_GT/scotland$over10_GT
 
 plot(scotland$small.big.boat.ration~scotland$year)
-View(scotland)
+plot(scotland$small.big.gt.ratio~scotland$year)
+head(scotland)
 
-ggploscotlandggplot(scotland, aes(x = factor(Year), y = Value, fill = type)) +
-  geom_bar(stat = "identity", position = position_dodge(width = 0.8)) +  # Separated bars
-  scale_fill_manual(values = c("steelblue", "darkorange")) +  # Custom colors
-  scale_x_discrete(expand = expansion(mult = c(0.1, 0.1))) +  # Ensures proper spacing
-  labs( x = "Year", y = "Value ('000)", fill = "Value Type") +
+scotland_ratios_long <- scotland %>%
+  pivot_longer(cols = c(small.big.boat.ration, small.big.gt.ratio), 
+               names_to = "Category", 
+               values_to = "Amount")
+
+scotland_ratios_long <- scotland_ratios_long %>%
+mutate(type = case_when(
+    Category == "small.big.boat.ration" ~ "Number of boats (n)",
+    Category == "small.big.gt.ratio" ~ "Boat capacity (GT)"
+  ))
+
+View(scotland_ratios_long)
+
+ggplot(data = scotland_ratios_long, aes(x = year, y = Amount, color = type)) +
+  geom_line(linewidth = 1) + 
+  geom_point() +
+   facet_wrap(~ type, scales = "free_y")+
+  scale_color_manual(values = c("#F0E442", "#0072B2")) + 
+  labs(x = "Year",
+       y = "Ratio of under 10 m to over 10 m boats in the Scottish fleet") +
   theme_classic() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(legend.position = "none")
+
+                     
+boatgt.ratio<- ggplot(data = scotland, aes(x = year, y = small.big.gt.ratio)) +
+  geom_line(linewidth = 1) + 
+  geom_point() +
+  labs(x = "Year",
+       y = "Ratio of under 10 m to over 10 m boat capacity in the Scottish fleet (GT)") +
+  theme_classic() +
+  scale_y_continuous(breaks = seq(0, max(value_long$n, na.rm = TRUE), by = 0.1))+
+  scale_x_continuous(breaks = seq(0, max(value_long$Year, na.rm = TRUE), by = 1))
+
+boatgt.ratio
