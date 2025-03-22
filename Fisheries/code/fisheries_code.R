@@ -194,7 +194,7 @@ ggplot(scotland, aes(x = factor(year), y = `value/quantity`)) +
   labs( x = "Year", y = "Value per ton caught (million £/ton )") +
   theme_bw()
 
-## Scotland Effort ----
+## Scotland ratios ----
 scotland$small.big.boat.ration<- scotland$under10_n/scotland$over10_n
 scotland$small.big.gt.ratio<- scotland$under10_GT/scotland$over10_GT
 
@@ -236,3 +236,18 @@ boatgt.ratio<- ggplot(data = scotland, aes(x = year, y = small.big.gt.ratio)) +
   scale_x_continuous(breaks = seq(0, max(value_long$Year, na.rm = TRUE), by = 1))
 
 boatgt.ratio
+
+## Scotland effort? ----
+plot(scotland$`value/quantity`~ scotland$year)
+
+ggplot(data = scotland, aes(x = year, y = `value/quantity`)) +
+  geom_line(linewidth = 1) + 
+  geom_point() +
+  scale_colour_manual(values=cbbPalette)+
+  labs(x = "Year",
+       y = "Value per Quantity Caught (£ million/Tonnes)") +
+  theme_classic() +
+  scale_x_continuous(breaks = seq(0, max(value_long$Year, na.rm = TRUE), by = 1))
+
+
+View(value_and_catch_total_long)
