@@ -78,7 +78,7 @@ ggplot(data = value_long, aes(x = Year, y = n, color = Species, group = Species)
 
 ## Scottish Fleet Size ----
 scotland_fleet <- read_excel("Fisheries.xlsx", 
-                       sheet = "agg scottish fleet")
+                       sheet = "agg scottish fleet") 
 View(scotland_fleet)
 
 scotland_fleet <- scotland_fleet %>%
@@ -98,14 +98,17 @@ ggplot(data = scotland_fleet, aes(x = year, y = fleet_n, color = size, group = s
   theme_classic()
 
 ## Scottish Landings value and catch ----
+View(scotland_long)
+
 scotland_long <- scotland %>%
-  pivot_longer(cols = c(value, quantity), 
+  pivot_longer(cols = c(`value 2023`, quantity), 
                names_to = "type", 
                values_to = "n") %>%
 mutate(type = case_when(
-  type == "value" ~ "Value (million £)",
+  type == "value 2023" ~ "Value (million £)",
   type == "quantity" ~ "Catch (tonnes)"
 ))
+
 View(scotland_long)
 
 ggplot(data = scotland_long, aes(x = year, y = n, color = type, group = type)) +
@@ -116,3 +119,33 @@ ggplot(data = scotland_long, aes(x = year, y = n, color = type, group = type)) +
        y = "Value ('000)",
        color = "Value Type") +
   theme_classic()
+
+
+## Plot value/catch ----
+total_value_catch <- read_excel("Fisheries.xlsx", 
+                             sheet = "Value.Catch") 
+value_catch <- total_value_catch %>%
+  filter(Species %in% c("Cuttlefish","Lobsters", "Mackerel", "Cod", "Sole"))%>%
+  select(-c(2:6))
+
+value_catch_long <- value_catch %>%
+  pivot_longer(cols = -Species, names_to = "Year", values_to = "n")
+
+# Convert Year to numeric (if necessary)
+value_catch_long$Year <- as.numeric(value_long$Year)
+View(value_catch_long)
+
+#colour palatte colour blind freindly
+cbbPalette <- c("#009E73", "#F0E442",  "#D55E00", "#CC79A7", "#0072B2")
+
+ggplot(data = value_catch_long, aes(x = Year, y = n, color = Species, group = Species)) +
+  geom_line(linewidth = 1) + 
+  geom_point() +
+  scale_colour_manual(values=cbbPalette)+
+  labs(x = "Year",
+       y = "Value per Quantity Caught (£ million/Tonnes)",
+       color = "Species") +
+  theme_classic() +
+  scale_y_continuous(breaks = seq(0, max(value_long$n, na.rm = TRUE), by = 5))+
+  scale_x_continuous(breaks = seq(0, max(value_long$Year, na.rm = TRUE), by = 1))
+
