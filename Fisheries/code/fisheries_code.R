@@ -123,14 +123,16 @@ scotland_fleet <- scotland_fleet %>%
     size == "all" ~ "All Vessels"
   ))
 
-ggplot(data = scotland_fleet, aes(x = year, y = fleet_n, color = size, group = size)) +
+scotland_fleet$kW <- scotland_fleet$kW / 1000
+ggplot(data = scotland_fleet, aes(x = year, y = kW, color = size, group = size)) +
   geom_line(linewidth = 1) + 
   geom_point() +
   scale_colour_manual(values=cbbPalette)+
   labs(x = "Year",
-       y = "Fleet Size (number of vessels)",
-       color = "Vessel Size") +
-  theme_classic()
+       y = "Fleet Power ('000 kW)",
+       color = "Type of Vessel") +
+  theme_classic() +
+  scale_x_continuous(breaks = seq(0, max(scotland_long$year, na.rm = TRUE), by = 1))
 
 ## Scottish Landings value and catch ----
 View(scotland_long)
@@ -251,3 +253,17 @@ ggplot(data = scotland, aes(x = year, y = `value/quantity`)) +
 
 
 View(value_and_catch_total_long)
+
+## Scotland catch/gt ----
+View(scotland)
+
+scotland$catch_gt<- (scotland$quantity / scotland$total_GT)*1000
+scotland$catch_kw<- (scotland$quantity/scotland$total_kW)*1000
+
+ggplot(data = scotland, aes(x = year, y = catch_gt)) +
+  geom_line(linewidth = 1) + 
+  geom_point() +
+  labs(x = "Year",
+       y = "Catch per Fleet Capacity (tonnes/GT)") +
+  theme_classic() +
+  scale_x_continuous(breaks = seq(0, max(scotland_long$year, na.rm = TRUE), by = 1))
