@@ -9,6 +9,7 @@ library(tidyverse)
 library(readxl)
 total_quantity <- read_excel("Fisheries.xlsx", 
                                     sheet = "Total Quantity")
+View(total_quantity)
 total_value<- read_excel("Fisheries.xlsx", 
                    sheet = "Total Value")
 scotland <- read_excel("Fisheries.xlsx", 
@@ -90,6 +91,7 @@ value_and_catch_total_long <- value_and_catch_total %>%
 
 value_and_catch_total_long$Year<- as.numeric(value_and_catch_total_long$Year)
 
+View(value_and_catch_total_long)
 # now plot
 ggplot(data = value_and_catch_total_long, aes(x = Year, y = Value, color = type, group = type)) +
   geom_line(linewidth = 1) + 
@@ -110,6 +112,55 @@ ggplot(value_and_catch_total_long, aes(x = factor(Year), y = Value, fill = type)
   labs( x = "Year", y = "Value ('000)", fill = "Value Type") +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+## Total UK catch and value by species ----
+quantity_species_long<- total_quantity %>%
+  pivot_longer(cols= -Species, names_to = "year", values_to= "catch") %>%
+  mutate(Type = "quantity")
+View(quantity_species_long)
+
+value_species_long <- total_value %>%
+  pivot_longer(cols= -Species, names_to = "year", values_to= "catch") %>%
+  mutate(Type = "value")
+View(value_species_long)
+
+
+# now that each data set is in long format, lets merge them 
+final_data <- bind_rows(value_species_long, quantity_species_long)
+View(final_data)
+
+#keep only the focal species
+species_to_keep <- c("Cuttlefish","Lobsters", "Mackerel", "Cod", "Sole", "Total All Species")
+species_catch_value<- final_data %>%
+  filter(Species %in% species_to_keep)
+
+years_to_keep <- 2014:2023
+species_catch_value <- species_catch_value %>%
+  filter(as.numeric(year) %in% years_to_keep)
+
+View(species_catch_value)
+
+species_catch_value <- species_catch_value %>%
+  mutate(type = case_when(
+  Type == "value" ~ "Value (million £)",
+Type == "quantity" ~ "Catch (tonnes)"
+))
+
+#plot
+ggplot(species_catch_value, aes(x = year, y = catch, color = type, group = type)) +
+  geom_line(size = 1) + 
+  geom_point() + 
+  scale_colour_manual(values=cbbPalette) +
+  facet_wrap(~ Species, scales = "free", ncol =2) +  
+  labs(
+       x = "Year",
+       y = "Value ('000)",
+       color = "Value Type") +
+  theme_classic() +
+  theme(strip.text = element_text(face = "bold"),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        panel.spacing = unit(1, "lines"),  # Adds space between facets
+        axis.title.x = element_text(margin = margin(t = 10)))  # Bold species labels
 
 ## Scottish Fleet Size ----
 scotland_fleet <- read_excel("Fisheries.xlsx", 
@@ -259,11 +310,12 @@ View(scotland)
 
 scotland$catch_gt<- (scotland$quantity / scotland$total_GT)*1000
 scotland$catch_kw<- (scotland$quantity/scotland$total_kW)*1000
+scotland$value_gt<- (scotland$`value 2023`/scotland$total_GT)*1000
 
-ggplot(data = scotland, aes(x = year, y = catch_gt)) +
+ggplot(data = scotland, aes(x = year, y = value_gt)) +
   geom_line(linewidth = 1) + 
   geom_point() +
   labs(x = "Year",
-       y = "Catch per Fleet Capacity (tonnes/GT)") +
+       y = "Value of landings per Fleet Capacity (million £/GT)") +
   theme_classic() +
   scale_x_continuous(breaks = seq(0, max(scotland_long$year, na.rm = TRUE), by = 1))
