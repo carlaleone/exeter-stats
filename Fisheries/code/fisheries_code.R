@@ -215,14 +215,14 @@ total_value_catch <- read_excel("Fisheries.xlsx",
                              sheet = "Value.Catch")
 
 value_catch <- total_value_catch %>%
-  filter(Species %in% c("Cuttlefish","Lobsters", "Mackerel", "Cod", "Sole", "Total All Species"))%>%
+  filter(Species %in% c("Cuttlefish","Lobsters", "Mackerel", "Cod", "Sole"))%>%
   select(-c(2:6))
 
 value_catch_long <- value_catch %>%
   pivot_longer(cols = -Species, names_to = "Year", values_to = "n")
 
 # Convert Year to numeric (if necessary)
-value_catch_long$Year <- as.numeric(value_long$Year)
+value_catch_long$Year <- as.numeric(value_catch_long$Year)
 View(value_catch_long)
 
 #colour palatte colour blind freindly
