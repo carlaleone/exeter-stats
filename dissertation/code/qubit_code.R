@@ -54,8 +54,8 @@ summary_table <- summary_table %>%
 
 summary_table$Time<- as.numeric(summary_table$Time)
 
-ggplot(summary_table, aes(x = Time, y = Mean_Read, color = Treatment, group = Treatment)) +
-  geom_line() +
+ggplot(qubit.2, aes(x = duration, y = concentration, color = Treatment,fill = Treatment, group = Treatment)) +
+  geom_smooth(method= glm, alpha = 0.2) +
   geom_point() +
   labs(
     x = "Time (Weeks of storage)",
@@ -63,7 +63,7 @@ ggplot(summary_table, aes(x = Time, y = Mean_Read, color = Treatment, group = Tr
   ) +
   theme_classic()
 
-
+?geom_smooth
 ### Models ----
 library(lme4)
 hist(qubit.2$concentration)
@@ -76,9 +76,15 @@ View(qubit.2)
 qubit.2$duration<- as.numeric(qubit.2$duration)
 qubit.2$concentration <- qubit.2$concentration + 0.001
 
-qubit.model1<- glm(concentration~ duration+ Treatment, data= qubit.2, family = quasipoisson(link= "sqrt"))
+qubit.model1<- glm(concentration~ duration*Treatment, data= qubit.2, family = quasipoisson(link= "sqrt"))
 summary(qubit.model1)
-
+ 
 
 
 plot(qubit.model1)
+
+### Post-hoc emmeans----
+library(emmeans)
+
+emm<- emmeans(qubit.model1, ~Treatment | duration, at = list(duration = c(0,1,2,4,8)))
+summary(emm)
