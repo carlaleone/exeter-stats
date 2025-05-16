@@ -29,7 +29,7 @@ qubit$duration <- as.numeric(qubit$`EventID/duration`)
 
 # summary table
 summary_table <- qubit %>%
-  group_by(Time, Treatment) %>%
+  group_by(Replicate, Duration) %>%
   summarize(
     Mean_Read = mean(concentration, na.rm = TRUE),
     SD_Read = sd(concentration, na.rm = TRUE),
@@ -106,15 +106,6 @@ plot_residuals(model_log, "Log Link")
 plot_residuals(model_identity, "Identity Link")
 plot_residuals(model_sqrt, "Sqrt Link")
 
-
-dispersion_log <- sum(residuals(model_log, type = "pearson")^2) / model_log$df.residual
-dispersion_identity <- sum(residuals(model_identity, type = "pearson")^2) / model_identity$df.residual
-dispersion_sqrt <- sum(residuals(model_sqrt, type = "pearson")^2) / model_sqrt$df.residual
-
-# Print dispersion parameters
-cat("Dispersion (Log Link):", dispersion_log, "\n")
-cat("Dispersion (Identity Link):", dispersion_identity, "\n")
-cat("Dispersion (Sqrt Link):", dispersion_sqrt, "\n")
 ### Post-hoc emmeans----
 library(emmeans)
 
