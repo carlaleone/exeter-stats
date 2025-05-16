@@ -18,12 +18,9 @@ qubit$Temperature<- as.factor(qubit$Temperature)
 qubit$`Qubit read concentration (ng/¬µL)`<- as.numeric(qubit$`Qubit read concentration (ng/¬µL)`)
 qubit$`Concentration (ng/¬µL)`<- as.numeric(qubit$`Concentration (ng/¬µL)`)
 
-# remove NAs
-qubit <- qubit[!is.na(qubit$`Sample ID`), ]
-
-# making the NAs = 0 so that no data goes missing, assuming the NAs ar < 0.05 concentration
-qubit <- qubit %>% 
-  mutate(across(everything(), ~ ifelse(is.na(.), 0, .)))
+# remove NAs- NAs can't be used because no known level of certainty
+qubit <- qubit[!is.na(qubit$`Qubit read concentration (ng/¬µL)`), ]
+View(qubit)
 
 # rename the columns
 qubit$concentration <- qubit$`Concentration (ng/¬µL)`
@@ -40,19 +37,10 @@ summary_table <- qubit %>%
     .groups = "drop"
   )
 
-summary_table <- summary_table[!is.na(summary_table$SD_Read), ]
 View(summary_table)
-
-#adjust the times
-time_labels <- c("1" = 0, "2" = 1, "3" = 2, "4" = 4, "5" = 8)
-
-summary_table <- summary_table %>%
-  mutate(Time = time_labels[Time])
 
 
 ### Make basic graph ----
-
-summary_table$Time<- as.numeric(summary_table$Time)
 
 ggplot(qubit.2, aes(x = duration, y = concentration, color = Treatment,fill = Treatment, group = Treatment)) +
   geom_smooth(method= glm, alpha = 0.2) +
@@ -74,15 +62,59 @@ qubit.2<- qubit %>%
 View(qubit.2)
  
 qubit.2$duration<- as.numeric(qubit.2$duration)
-qubit.2$concentration <- qubit.2$concentration + 0.001
 
-qubit.model1<- glm(concentration~ duration*Treatment, data= qubit.2, family = quasipoisson(link= "sqrt"))
+qubit.model1<- lm(log(concentration)~duration*Treatment, data = qubit.2)
 summary(qubit.model1)
- 
-
-
 plot(qubit.model1)
 
+qubit.model2<- glm(concentration~ duration*Treatment, data= qubit.2, family = quasipoisson (link = log))
+summary(qubit.model2)
+qubit.model3<- glm(concentration~ duration+Treatment, data= qubit.2, family = quasipoisson (link = log))
+summary(qubit.model3)
+# more dispersion parameter and less significance in the Freezer treatment
+ 
+anova(qubit.model3, qubit.model2, test = "F")
+drop1(qubit.model2)
+drop1(qubit.model3)
+
+### Checking the models ----
+# Log link (default for quasipoisson)
+model_log <- glm(concentration ~ duration * Treatment, data = qubit.2, family = quasipoisson(link = "log"))
+
+# Identity link
+model_identity <- glm(concentration ~ duration * Treatment, data = qubit.2, family = quasipoisson(link = "identity"))
+
+# Sqrt link
+model_sqrt <- glm(concentration ~ duration * Treatment, data = qubit.2, family = quasipoisson(link = "sqrt"))
+
+cat("Residual Deviance (Log Link):", model_log$deviance, "\n")
+cat("Residual Deviance (Identity Link):", model_identity$deviance, "\n")
+cat("Residual Deviance (Sqrt Link):", model_sqrt$deviance, "\n")
+
+
+# Function to plot residuals vs fitted values
+plot_residuals <- function(model, model_name) {
+  df <- data.frame(Fitted = fitted(model), Residuals = residuals(model, type = "pearson"))
+  ggplot(df, aes(x = Fitted, y = Residuals)) +
+    geom_point(alpha = 0.5) +
+    geom_hline(yintercept = 0, linetype = "dashed") +
+    labs(title = paste("Residuals vs Fitted for", model_name), x = "Fitted Values", y = "Pearson Residuals")
+}
+
+# Plot residuals
+plot_residuals(model_log, "Log Link")
+plot_residuals(model_identity, "Identity Link")
+plot_residuals(model_sqrt, "Sqrt Link")
+
+
+dispersion_log <- sum(residuals(model_log, type = "pearson")^2) / model_log$df.residual
+dispersion_identity <- sum(residuals(model_identity, type = "pearson")^2) / model_identity$df.residual
+dispersion_sqrt <- sum(residuals(model_sqrt, type = "pearson")^2) / model_sqrt$df.residual
+
+# Print dispersion parameters
+cat("Dispersion (Log Link):", dispersion_log, "\n")
+cat("Dispersion (Identity Link):", dispersion_identity, "\n")
+cat("Dispersion (Sqrt Link):", dispersion_sqrt, "\n")
 ### Post-hoc emmeans----
 library(emmeans)
 
