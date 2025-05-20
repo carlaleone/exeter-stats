@@ -8,7 +8,8 @@ library(tidyverse)
 getwd()
 setwd("/Users/carlaleone/Desktop/Exeter/dissertation")
 qubit <- read_excel("data/qubit_data.xls")
-View(qubit)
+qubit
+
 
 ### Clean the data ----
 # make columns either factor or numeric

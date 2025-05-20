@@ -4,17 +4,18 @@
 
 ### Load data and packages ----
 library(pacman)
-pacman::p_load(stringr, tidyverse, readxl, patchwork, flextable)
+pacman::p_load(stringr, tidyverse, readxl, patchwork, flextable, readr)
 getwd()
-mock_data <- read_excel("data/mock_data.xls")
-View(mock_data)
+setwd("/Users/carlaleone/Desktop/Exeter/dissertation")
+meta <- read_excel("data/meta.xls") #use read csv next time
+meta
+View(meta)
 
-mock_data$Duration <- as.numeric(gsub("w", "", mock_data$Duration))
-
+meta$Duration <- as.numeric(gsub("w", "", meta$Duration))
 
 ### Exploring the data----
 #summary table for the number of Reads
-summary_table <- mock_data %>%
+summary_table <- meta %>%
   group_by(Duration, Temperature) %>%
   summarize(
     Mean_Read = mean(Reads, na.rm = TRUE),
@@ -35,22 +36,22 @@ ggplot(summary_table, aes(x = Duration, y = Mean_Read, color = Temperature,fill 
   theme_classic()
 
 
-boxplot(mock_data$Reads ~ mock_data$Duration)
+boxplot(meta$Reads ~ meta$Duration)
 # seems like fewer reads in week 4
 
-unique(mock_data$Order)
+unique(meta$Order)
 # Total of 6 orders Identified
 
-unique(mock_data$Family)
+unique(meta$Family)
 # Total of 7 families Identified
 
-unique(mock_data$Species)
+unique(meta$Species)
 # Total of 14 species Identified
 
 #summary of taxa
 
 
-summary_taxa <- mock_data %>%
+summary_taxa <- meta %>%
   group_by(Duration, Temperature, Replicate) %>%
   summarise(
     unique_orders = n_distinct(Order),
@@ -112,7 +113,7 @@ summary(lm(unique_families ~ Duration*Temperature, data = summary_taxa))
 
 
 ### Community analysis ----
-species_wide1<- subset(mock_data, select = c(Duration, Temperature, Species, Reads, Replicate))
+species_wide1<- subset(meta, select = c(Duration, Temperature, Species, Reads, Replicate))
 View(species_wide)
 
 species_wide<- species_wide1 %>% 
