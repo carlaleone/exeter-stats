@@ -3,8 +3,8 @@
 # Carla Leone
 
 ### Load data and packages ----
-library(tidyverse)
-library(readxl)
+library(pacman)
+pacman::p_load(stringr, tidyverse, readxl, patchwork, flextable)
 getwd()
 mock_data <- read_excel("data/mock_data.xls")
 View(mock_data)
@@ -80,7 +80,7 @@ n_family<- ggplot(summary_taxa, aes(x = Duration, y = unique_families, color = T
   #geom_point() +
   labs(
     x = "Time (Weeks of storage)",
-    y = "Number of species detected"
+    y = "Number of families detected"
   ) + theme_classic()
 
 #plot the number of orders
@@ -89,7 +89,7 @@ n_order<- ggplot(summary_taxa, aes(x = Duration, y = unique_orders, color = Temp
   #geom_point() +
   labs(
     x = "Time (Weeks of storage)",
-    y = "Number of species detected"
+    y = "Number of orders detected"
   ) + theme_classic() 
 
 library(gridExtra)
