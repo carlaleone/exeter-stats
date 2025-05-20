@@ -20,6 +20,14 @@ qubit$`Qubit read concentration (ng/¬µL)`<- as.numeric(qubit$`Qubit read conce
 qubit$`Concentration (ng/¬µL)`<- as.numeric(qubit$`Concentration (ng/¬µL)`)
 
 # remove NAs- NAs can't be used because no known level of certainty
+qubit <- qubit[!is.na(qubit$`Sample ID`), ]
+View(qubit)
+
+na.conc<- qubit %>% filter(is.na(`Qubit read concentration (ng/¬µL)`)) %>%
+  mutate(`Qubit read concentration (ng/¬µL)` = 0.1) #yield give a pseudo number just for visualization = 0.1) #yield give a pseudo number just for visualization
+
+na.conc
+
 qubit <- qubit[!is.na(qubit$`Qubit read concentration (ng/¬µL)`), ]
 View(qubit)
 
@@ -27,6 +35,10 @@ View(qubit)
 qubit$concentration <- qubit$`Concentration (ng/¬µL)`
 
 qubit$duration <- as.numeric(qubit$`EventID/duration`)
+
+na.conc$concentration <- na.conc$`Qubit read concentration (ng/¬µL)`
+
+na.conc$duration <- as.numeric(na.conc$`EventID/duration`)
 
 # summary table
 summary_table <- qubit %>%
@@ -43,24 +55,26 @@ View(summary_table)
 
 ### Make basic graph ----
 
-ggplot(qubit.2, aes(x = duration, y = concentration, color = Treatment,fill = Treatment, group = Treatment)) +
+ggplot(qubit, aes(x = duration, y = concentration, color = Treatment,fill = Treatment, group = Treatment)) +
   geom_smooth(method= glm, alpha = 0.2) +
-  geom_point() +
+  geom_point(data = na.conc, pch = 4, position = position_dodge()) +
   labs(
     x = "Time (Weeks of storage)",
     y = "Concentration ((ng/¬µL))"
   ) +
   theme_classic()
 
-?geom_smooth
+qubit
+
+na.conc
 ### Models ----
 library(lme4)
 hist(qubit.2$concentration)
 
-qubit.2<- qubit %>%
+qubit<- qubit %>%
   filter(Treatment != "Extraction Blank")
 
-View(qubit.2)
+View(qubit)
  
 qubit.2$duration<- as.numeric(qubit.2$duration)
 
