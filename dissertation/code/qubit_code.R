@@ -3,30 +3,32 @@
 # Carla Leone
 
 ### Import the data and packages ----
-library(readxl)
-library(tidyverse)
+library(pacman)
+pacman::p_load(stringr, tidyverse, readxl, patchwork, flextable, readr)
 getwd()
 setwd("/Users/carlaleone/Desktop/Exeter/dissertation")
 qubit <- read_excel("data/qubit_data.xls")
 qubit
+colnames(qubit)
 
 
 ### Clean the data ----
-# make columns either factor or numeric
-qubit$`Sample ID`<- as.character(qubit$`Sample ID`)
-qubit$Time<- as.factor(qubit$Time)
-qubit$Temperature<- as.factor(qubit$Temperature)
-qubit$`Qubit read concentration (ng/¬µL)`<- as.numeric(qubit$`Qubit read concentration (ng/¬µL)`)
-qubit$`Concentration (ng/¬µL)`<- as.numeric(qubit$`Concentration (ng/¬µL)`)
+# adjust tibble
+conc<- read_excel('data/qubit_data.xls') %>%
+  dplyr:: select( - 'Qubit read concentration (ng/¬µL)') %>%
+  rename('duration'= 'EventID/duration', 'concentration' = 'Concentration (ng/¬µL)')
+  
+conc<- conc[!is.na(conc$`Sample ID`), ]
+
+conc
 
 # remove NAs- NAs can't be used because no known level of certainty
-qubit <- qubit[!is.na(qubit$`Sample ID`), ]
-View(qubit)
+na.conc<- conc %>% 
+  filter(is.na(concentration)) %>%
+  mutate(concentration = 0.1) 
+#yield give a pseudo number just for visualization = 0.1) #yield give a pseudo number just for visualization
 
-na.conc<- qubit %>% filter(is.na(`Qubit read concentration (ng/¬µL)`)) %>%
-  mutate(`Qubit read concentration (ng/¬µL)` = 0.1) #yield give a pseudo number just for visualization = 0.1) #yield give a pseudo number just for visualization
-
-na.conc
+  
 
 qubit <- qubit[!is.na(qubit$`Qubit read concentration (ng/¬µL)`), ]
 View(qubit)
@@ -55,7 +57,7 @@ View(summary_table)
 
 ### Make basic graph ----
 
-ggplot(qubit, aes(x = duration, y = concentration, color = Treatment,fill = Treatment, group = Treatment)) +
+ggplot(qubist, aes(x = duration, y = concentration, color = Treatment,fill = Treatment, group = Treatment)) +
   geom_smooth(method= glm, alpha = 0.2) +
   geom_point(data = na.conc, pch = 4, position = position_dodge()) +
   labs(
