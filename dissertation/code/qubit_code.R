@@ -20,6 +20,7 @@ conc<- read_excel('data/qubit_data.xls') %>%
   
 conc<- conc[!is.na(conc$`Sample ID`), ]
 
+conc$concentration<- as.numeric(conc$concentration)
 conc
 
 # remove NAs- NAs can't be used because no known level of certainty
@@ -28,19 +29,12 @@ na.conc<- conc %>%
   mutate(concentration = 0.1) 
 #yield give a pseudo number just for visualization = 0.1) #yield give a pseudo number just for visualization
 
-  
+View(na.conc)
 
-qubit <- qubit[!is.na(qubit$`Qubit read concentration (ng/¬µL)`), ]
-View(qubit)
+#remove blanks
+na.conc<- na.conc %>%
+  filter(Treatment != "Extraction Blank")
 
-# rename the columns
-qubit$concentration <- qubit$`Concentration (ng/¬µL)`
-
-qubit$duration <- as.numeric(qubit$`EventID/duration`)
-
-na.conc$concentration <- na.conc$`Qubit read concentration (ng/¬µL)`
-
-na.conc$duration <- as.numeric(na.conc$`EventID/duration`)
 
 # summary table
 summary_table <- qubit %>%
@@ -57,9 +51,9 @@ View(summary_table)
 
 ### Make basic graph ----
 
-ggplot(qubist, aes(x = duration, y = concentration, color = Treatment,fill = Treatment, group = Treatment)) +
+ggplot(conc, aes(x = duration, y = concentration, color = Treatment,fill = Treatment, group = Treatment)) +
   geom_smooth(method= glm, alpha = 0.2) +
-  geom_point(data = na.conc, pch = 4, position = position_dodge()) +
+  geom_point(data = na.conc, pch = 4, position = position_jitterdodge(), size = 1.2) +
   labs(
     x = "Time (Weeks of storage)",
     y = "Concentration ((ng/¬µL))"
