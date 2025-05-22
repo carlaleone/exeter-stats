@@ -7,23 +7,20 @@ library(pacman)
 pacman::p_load(stringr, tidyverse, readxl, patchwork, flextable, readr)
 getwd()
 setwd("/Users/carlaleone/Desktop/Exeter/dissertation")
-meta <- read_excel("data/meta.xls") #use read csv next time
-meta
-View(meta)
-
+meta <- read_excel("data/mock_data.xls") #use read csv next time
 meta$Duration <- as.numeric(gsub("w", "", meta$Duration))
+meta
 
-### Exploring the data----
-#summary table for the number of Reads
-summary_table <- meta %>%
+### Exploring the number of reads----
+# summary table for the number of Reads
+summary_meta <- meta %>%
   group_by(Duration, Temperature) %>%
   summarize(
     Mean_Read = mean(Reads, na.rm = TRUE),
     SD_Read = sd(Reads, na.rm = TRUE),
-    Count = n(),
-    .groups = "drop"
+    Count = n()
   )
-View(summary_table)
+View(summary_meta)
 
 #plot
 ggplot(summary_table, aes(x = Duration, y = Mean_Read, color = Temperature,fill = Temperature, group = Temperature)) +
@@ -39,6 +36,7 @@ ggplot(summary_table, aes(x = Duration, y = Mean_Read, color = Temperature,fill 
 boxplot(meta$Reads ~ meta$Duration)
 # seems like fewer reads in week 4
 
+### Exploring OTUs----
 unique(meta$Order)
 # Total of 6 orders Identified
 
@@ -113,24 +111,20 @@ summary(lm(unique_families ~ Duration*Temperature, data = summary_taxa))
 
 
 ### Community analysis ----
-species_wide1<- subset(meta, select = c(Duration, Temperature, Species, Reads, Replicate))
+meta$SampleID<- paste0(substr(meta$Temperature, 1, 1), meta$Duration)
+meta
+meta$SampleID<- paste(meta$SampleID, meta$Replicate, sep = ".")
+meta
+
+species_wide<- subset(meta, select = c(SampleID, Species, Reads))
 View(species_wide)
 
-species_wide<- species_wide1 %>% 
-  group_by(Duration, Temperature, Species) %>% #grouping by fish family
-  summarize(Read = mean(Reads), #will return the average number of fish for each family at each reef
-            Duration  = Duration,
-            Temperature = Temperature,
-            Species = Species) %>% 
-  ungroup()
-
-View(species_wide)
 
 # then we want to pivot the data set to make it wide, so that each species is in its own columns. 
 wide<- species_wide %>% 
   pivot_wider(
     names_from = Species, # columns are the names from the fish families
-    values_from = Read, # values come from the quantity column measured earlier
+    values_from = Reads, # values come from the quantity column measured earlier
     values_fn = mean,  # taking the mean of the repeated values
     values_fill = 0) 
 View(wide)

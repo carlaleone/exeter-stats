@@ -2,28 +2,25 @@
 # 12 May 2025
 # Carla Leone
 
-### Import the data and packages ----
+### Import packages ----
 library(pacman)
 pacman::p_load(stringr, tidyverse, readxl, patchwork, flextable, readr)
 getwd()
 setwd("/Users/carlaleone/Desktop/Exeter/dissertation")
-qubit <- read_excel("data/qubit_data.xls")
-qubit
-colnames(qubit)
 
-
-### Clean the data ----
-# adjust tibble
+### Load and Clean the data ----
 conc<- read_excel('data/qubit_data.xls') %>%
   dplyr:: select( - 'Qubit read concentration (ng/¬µL)') %>%
   rename('duration'= 'EventID/duration', 'concentration' = 'Concentration (ng/¬µL)')
   
+# remove the full NA rows
 conc<- conc[!is.na(conc$`Sample ID`), ]
 
+# make concentration numeric to expose other NAs - expect warning of NAs introduced by coercion
 conc$concentration<- as.numeric(conc$concentration)
 conc
 
-# remove NAs- NAs can't be used because no known level of certainty
+# create new data frame for NAs - can't be used in analysis because no known level of certainty
 na.conc<- conc %>% 
   filter(is.na(concentration)) %>%
   mutate(concentration = 0.1) 
@@ -31,36 +28,60 @@ na.conc<- conc %>%
 
 View(na.conc)
 
-#remove blanks
+#remove blanks from NA data 
 na.conc<- na.conc %>%
   filter(Treatment != "Extraction Blank")
 
+# remove NAs from the original data frame
+conc<- conc[!is.na(conc$concentration), ]
+conc
 
-# summary table
-summary_table <- qubit %>%
-  group_by(Replicate, Duration) %>%
+### Summary  ----
+# summary table for the conc data set
+summary_table <- conc %>%
+  group_by(Treatment, duration) %>%
   summarize(
-    Mean_Read = mean(concentration, na.rm = TRUE),
-    SD_Read = sd(concentration, na.rm = TRUE),
+    mean_conc = mean(concentration, na.rm = TRUE),
+    SD_conc = sd(concentration, na.rm = TRUE),
     Count = n(),
     .groups = "drop"
   )
 
 View(summary_table)
 
+# summary for the NAs
+
+summary_na <- na.conc %>%
+  group_by(Treatment, duration) %>%
+  summarize(
+    Count = n())
+
+summary_na
+
+# More of the frozen samples had NAs
+# 11 frozen NAs and 4 Ambient NAs
+# 3 for week 0
+# 0 for week 1
+# 2 for week 2
+# 3 for week 4
+# 7 for week 8
+
+
+
 
 ### Make basic graph ----
 
 ggplot(conc, aes(x = duration, y = concentration, color = Treatment,fill = Treatment, group = Treatment)) +
   geom_smooth(method= glm, alpha = 0.2) +
-  geom_point(data = na.conc, pch = 4, position = position_jitterdodge(), size = 1.2) +
+  geom_point(data = na.conc, pch = 4, position = position_jitterdodge(), size = 1.8) +
   labs(
     x = "Time (Weeks of storage)",
     y = "Concentration ((ng/¬µL))"
   ) +
+  scale_x_continuous(breaks = c(0,1,2,3,4,5,6,7,8)) +
   theme_classic()
 
-qubit
+conc
 
 na.conc
 ### Models ----
