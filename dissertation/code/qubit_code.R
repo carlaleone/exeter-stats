@@ -7,7 +7,8 @@ library(pacman)
 pacman::p_load(stringr, tidyverse, readxl, patchwork, flextable, readr, paletteer)
 getwd()
 setwd("/Users/carlaleone/Desktop/Exeter/dissertation")
-
+#----
+#----
 ### Load and Clean the data ----
 conc<- read_excel('data/qubit_data.xls') %>%
   dplyr:: select( - 'Qubit read concentration (ng/¬µL)') %>%
@@ -36,6 +37,8 @@ na.conc<- na.conc %>%
 conc<- conc[!is.na(conc$concentration), ]
 conc
 
+#----
+#----
 ### Summary  ----
 # summary table for the conc data set
 summary_table <- conc %>%
@@ -68,16 +71,18 @@ summary_na
 
 
 
-
-### Make basic graph ----
+#----
+#----
+### Make first linear graph ----
 duo.colours<- palette.colors(2) 
 
 conc.plot<- ggplot(conc, aes(x = duration, y = concentration, color = Treatment,fill = Treatment, group = Treatment)) +
   geom_smooth(method= glm, alpha = 0.2) +
+  geom_point(data = conc) +
   geom_point(data = na.conc, pch = 4, position = position_jitterdodge(), size = 1.8) +
   labs(
     x = "Time (Weeks of storage)",
-    y = "Concentration ((ng/µL))"
+    y = "Concentration (ng/µL)"
   ) + # Use in a ggplot2 chart:
   scale_colour_paletteer_d("lisa::BridgetRiley") +
 scale_fill_paletteer_d("lisa::BridgetRiley") +
@@ -88,31 +93,43 @@ scale_fill_paletteer_d("lisa::BridgetRiley") +
 conc.plot 
 
 na.conc
+#----
+#----
 ### Models ----
 library(lme4)
-hist(qubit.2$concentration)
-
-qubit<- qubit %>%
-  filter(Treatment != "Extraction Blank")
-
-View(qubit)
+hist(conc$concentration)
+conc
  
 qubit.2$duration<- as.numeric(qubit.2$duration)
 
-qubit.model1<- lm(log(concentration)~duration*Treatment, data = qubit.2)
-summary(qubit.model1)
-plot(qubit.model1)
+conc.model1<- lm(log(concentration)~duration*Treatment, data = conc)
+summary(conc.model1)
+plot(conc.model1)
+# ok, but not great diagnostic plots
 
-qubit.model2<- glm(concentration~ duration*Treatment, data= qubit.2, family = quasipoisson (link = log))
-summary(qubit.model2)
-qubit.model3<- glm(concentration~ duration+Treatment, data= qubit.2, family = quasipoisson (link = log))
-summary(qubit.model3)
-# more dispersion parameter and less significance in the Freezer treatment
- 
+# glm with poisson because right skew
+conc.model2<- glm(concentration~ duration*Treatment, data= conc, family = poisson (link = log))
+summary(conc.model2)
+# overdispersed
+
+
+# glm with quasipoisson to mitigate overdispersion and without interaction
+conc.model3<- glm(concentration~ duration+Treatment, data= conc, family = quasipoisson (link = log))
+summary(conc.model3)
+
+# glm quasipoisson with interaction term
+conc.model4<- glm(concentration~ duration*Treatment, data= conc, family = quasipoisson (link = log))
+summary(conc.model4)
+plot(conc.model4)
+
+# test the significance of the interaction term 
 anova(qubit.model3, qubit.model2, test = "F")
 drop1(qubit.model2)
 drop1(qubit.model3)
+# having the interaction makes a significant difference -keep the interaction term.
 
+#----
+#----
 ### Checking the models ----
 # Log link (default for quasipoisson)
 model_log <- glm(concentration ~ duration * Treatment, data = qubit.2, family = quasipoisson(link = "log"))
@@ -142,8 +159,28 @@ plot_residuals(model_log, "Log Link")
 plot_residuals(model_identity, "Identity Link")
 plot_residuals(model_sqrt, "Sqrt Link")
 
+#----
+#----
 ### Post-hoc emmeans----
 library(emmeans)
 
 emm<- emmeans(qubit.model1, ~Treatment | duration, at = list(duration = c(0,1,2,4,8)))
 summary(emm)
+
+#----
+#----
+### Try a negative exponential graph + model ----
+ggplot(conc, aes(x = duration, y = concentration, color = Treatment,fill = Treatment, group = Treatment)) +
+  geom_smooth(method="lm", formula= (y ~ exp(x)), alpha = 0.2) +
+  geom_point(data = conc) +
+  geom_point(data = na.conc, pch = 4, position = position_jitterdodge(), size = 1.8) +
+  labs(
+    x = "Time (Weeks of storage)",
+    y = "Concentration (ng/µL)"
+  ) + # Use in a ggplot2 chart:
+  scale_colour_paletteer_d("lisa::BridgetRiley") +
+  scale_fill_paletteer_d("lisa::BridgetRiley") +
+  scale_x_continuous(breaks = c(0,1,2,3,4,5,6,7,8)) +
+  theme_classic() +
+  theme(text = element_text(size = 15))
+

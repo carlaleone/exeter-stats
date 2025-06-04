@@ -11,7 +11,9 @@ meta <- read_excel("data/mock_data.xls") #use read csv next time
 meta$Duration <- as.numeric(gsub("w", "", meta$Duration))
 meta
 
-### Exploring the number of reads----
+###----
+###----
+### Exploring the number of reads ----
 # summary table for the number of Reads
 summary_meta <- meta %>%
   group_by(Duration, Temperature) %>%
@@ -20,10 +22,10 @@ summary_meta <- meta %>%
     SD_Read = sd(Reads, na.rm = TRUE),
     Count = n()
   )
-View(summary_meta)
+summary_meta
 
 #plot
-ggplot(summary_table, aes(x = Duration, y = Mean_Read, color = Temperature,fill = Temperature, group = Temperature)) +
+readnumber.plot<- ggplot(summary_table, aes(x = Duration, y = Mean_Read, color = Temperature,fill = Temperature, group = Temperature)) +
   geom_line() +
   geom_point() +
   labs(
@@ -32,10 +34,13 @@ ggplot(summary_table, aes(x = Duration, y = Mean_Read, color = Temperature,fill 
   ) +
   theme_classic()
 
+readnumber.plot
 
 boxplot(meta$Reads ~ meta$Duration)
 # seems like fewer reads in week 4
 
+###----
+###----
 ### Exploring OTUs----
 unique(meta$Order)
 # Total of 6 orders Identified
@@ -58,9 +63,10 @@ summary_taxa <- meta %>%
   )
 
 summary_taxa$Duration <- as.numeric(gsub("w", "", summary_taxa$Duration))
-View(summary_taxa)
+summary_taxa
 
-
+### ----
+###----
 ### Initial Plots for number of taxa of differen levels ----
 
 
