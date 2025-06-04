@@ -77,7 +77,7 @@ summary_na
 duo.colours<- palette.colors(2) 
 
 conc.plot<- ggplot(conc, aes(x = duration, y = concentration, color = Treatment,fill = Treatment, group = Treatment)) +
-  geom_smooth(method= glm, alpha = 0.2) +
+  geom_smooth(method= glm, method.args = list(family = quasipoisson(link = "log")), alpha = 0.2) +
   geom_point(data = conc) +
   geom_point(data = na.conc, pch = 4, position = position_jitterdodge(), size = 1.8) +
   labs(

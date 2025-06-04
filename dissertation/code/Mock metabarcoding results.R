@@ -4,7 +4,7 @@
 
 ### Load data and packages ----
 library(pacman)
-pacman::p_load(stringr, tidyverse, readxl, patchwork, flextable, readr)
+pacman::p_load(stringr, tidyverse, readxl, patchwork, flextable, readr, vegan)
 getwd()
 setwd("/Users/carlaleone/Desktop/Exeter/dissertation")
 meta <- read_excel("data/mock_data.xls") #use read csv next time
@@ -67,8 +67,7 @@ summary_taxa
 
 ### ----
 ###----
-### Initial Plots for number of taxa of differen levels ----
-
+### Initial Plots for number of taxa of different levels ----
 
 #plot the number of species
 n_species<- ggplot(summary_taxa, aes(x = Duration, y = unique_species, color = Temperature,fill = Temperature, group = Temperature)) +
@@ -100,6 +99,8 @@ n_order<- ggplot(summary_taxa, aes(x = Duration, y = unique_orders, color = Temp
 library(gridExtra)
 grid.arrange(n_species, n_family, n_order, ncol = 3)
 
+### ----
+### ----
 ### Linear Model Analysis----
 
 # I want to know whether there is a statistically significant difference in the number of species/order/family being detected
@@ -116,21 +117,97 @@ summary(lm(unique_families ~ Duration*Temperature, data = summary_taxa))
 
 
 
+### ----
+### ----
 ### Community analysis ----
 meta$SampleID<- paste0(substr(meta$Temperature, 1, 1), meta$Duration)
 meta
 meta$SampleID<- paste(meta$SampleID, meta$Replicate, sep = ".")
 meta
 
-species_wide<- subset(meta, select = c(SampleID, Species, Reads))
-View(species_wide)
+otu_long<- subset(meta, select = c(SampleID, Species, Reads))
+otu_long
 
 
 # then we want to pivot the data set to make it wide, so that each species is in its own columns. 
-wide<- species_wide %>% 
+otu_wide<- otu_long %>% 
   pivot_wider(
     names_from = Species, # columns are the names from the fish families
     values_from = Reads, # values come from the quantity column measured earlier
     values_fn = mean,  # taking the mean of the repeated values
     values_fill = 0) 
-View(wide)
+otu_wide
+
+# make sure sample ID is the row names not an actual row
+otu_wide<- otu_wide %>%
+  column_to_rownames(var = "SampleID")
+otu_wide
+
+#make another data frame with the different categories for each Sample ID
+treatments<- meta %>%
+  distinct(SampleID, Temperature, Duration)
+treatments
+
+
+# bray curtis matrix of dissimilarity
+otu_dist<- vegdist(otu_wide, method="bray")
+otu_dist
+
+### ----
+### ----
+### Trying CCA ----
+otu_wide %>%
+  metaMDS(trace = F) %>%
+  ordiplot(type = "none") %>%
+  text("sites")
+
+cca_result <- cca(otu_wide, treatments)
+cca_result
+plot(cca_result)
+data(varespec)
+View(varespec)
+
+### ----
+### ----
+### Heat Maps ----
+# Select only the frozen samples
+frozen <- meta %>%
+  filter(Temperature == "Frozen") %>%
+  select(c(Reads, Duration, Species))
+
+#frozen<- frozen %>%
+#mutate(detected = ifelse(Reads > 0, 1, 0)) %>%
+#  select(-Reads) #If you want to only have number of times detected rather than read number
+frozen
+
+# make frozen wide format, with species as row names and duration as column names
+frozen_wide<- frozen %>% 
+  pivot_wider(
+    names_from = Species, # columns are the names from the fish families
+    values_from = Reads, # values come from the quantity column measured earlier
+    values_fn = mean,  # taking the mean of the repeated values
+    values_fill = 0) 
+frozen_wide
+
+#make species the name column
+frozen_wide<- frozen_wide %>%
+  column_to_rownames(var = "Duration")
+
+# make it a matrix so its only numeric and the heatmap works
+frozen_matrix<- as.matrix(frozen_wide)
+
+#hellinger transformation like bizzozzero
+hellinger_matrix <- decostand(frozen_matrix, method = "hellinger")
+?decostand
+install.packages("pheatmap")
+library(pheatmap)
+
+pheatmap(hellinger_matrix,
+         cluster_rows = F,
+         cluster_cols = F,
+         scale = "none",
+         main = "Hellinger-transformed Heatmap")
+
+# basic heatmap
+heatmap(frozen_matrix,Colv = NA, Rowv = NA,  scale="column", xlab="Weeks in Storage")
+
