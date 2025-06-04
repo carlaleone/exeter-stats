@@ -75,11 +75,15 @@ summary_na
 #----
 ### Make first linear graph ----
 duo.colours<- palette.colors(2) 
+na.conc$`Below Detection Limit` <- "< 0.5 ng/µL"
 
 conc.plot<- ggplot(conc, aes(x = duration, y = concentration, color = Treatment,fill = Treatment, group = Treatment)) +
   geom_smooth(method= glm, method.args = list(family = quasipoisson(link = "log")), alpha = 0.2) +
   geom_point(data = conc) +
-  geom_point(data = na.conc, pch = 4, position = position_jitterdodge(), size = 1.8) +
+  geom_point(data = na.conc,
+             aes(shape = `Below Detection Limit`, color = Treatment),
+             position = position_jitterdodge(), size = 1.8) +  # X points
+  scale_shape_manual(values = c("< 0.5 ng/µL" = 4)) +
   labs(
     x = "Time (Weeks of storage)",
     y = "Concentration (ng/µL)"
