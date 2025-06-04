@@ -4,7 +4,7 @@
 
 ### Import packages ----
 library(pacman)
-pacman::p_load(stringr, tidyverse, readxl, patchwork, flextable, readr)
+pacman::p_load(stringr, tidyverse, readxl, patchwork, flextable, readr, paletteer)
 getwd()
 setwd("/Users/carlaleone/Desktop/Exeter/dissertation")
 
@@ -70,18 +70,21 @@ summary_na
 
 
 ### Make basic graph ----
+duo.colours<- palette.colors(2) 
 
-ggplot(conc, aes(x = duration, y = concentration, color = Treatment,fill = Treatment, group = Treatment)) +
+conc.plot<- ggplot(conc, aes(x = duration, y = concentration, color = Treatment,fill = Treatment, group = Treatment)) +
   geom_smooth(method= glm, alpha = 0.2) +
   geom_point(data = na.conc, pch = 4, position = position_jitterdodge(), size = 1.8) +
   labs(
     x = "Time (Weeks of storage)",
-    y = "Concentration ((ng/¬µL))"
-  ) +
+    y = "Concentration ((ng/µL))"
+  ) + # Use in a ggplot2 chart:
+  scale_colour_paletteer_d("lisa::BridgetRiley") +
+scale_fill_paletteer_d("lisa::BridgetRiley") +
   scale_x_continuous(breaks = c(0,1,2,3,4,5,6,7,8)) +
   theme_classic()
 
-conc
+conc.plot 
 
 na.conc
 ### Models ----
