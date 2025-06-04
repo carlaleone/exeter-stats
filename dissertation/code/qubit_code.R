@@ -82,7 +82,8 @@ conc.plot<- ggplot(conc, aes(x = duration, y = concentration, color = Treatment,
   scale_colour_paletteer_d("lisa::BridgetRiley") +
 scale_fill_paletteer_d("lisa::BridgetRiley") +
   scale_x_continuous(breaks = c(0,1,2,3,4,5,6,7,8)) +
-  theme_classic()
+  theme_classic() +
+  theme(text = element_text(size = 15))
 
 conc.plot 
 
