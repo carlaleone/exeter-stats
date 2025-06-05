@@ -4,4 +4,5 @@ This folder contains the lab procedures that were used for DNA extractions and Q
 ### Extractions
 - Protocol follows procedures outlined by Maiello et al. Little samplers, big fleet: eDNA metabarcoding from commercial trawlers enhances ocean monitoring 2022. Fisheries Research. DOI: 10.1016/j.fishres.2022.106259
 - And as used in Kressler, Whitelegg et al. In Review. Environmental DNA.
-- All the steps used for this research can be found in this pdf. 
+- All the steps used for this research can be found in [this pdf](https://github.com/carlaleone/exeter-stats/blob/main/dissertation/laboratory%20procedures/Gauze_filter_DNAextraction_2025_LeoneEdits.pdf).
+- The tools used in this extraction are all from the Qiagen DNeasy Blood and Tissue Kit. 
