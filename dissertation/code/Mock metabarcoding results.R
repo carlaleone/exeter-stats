@@ -151,22 +151,41 @@ treatments
 
 # bray curtis matrix of dissimilarity
 otu_dist<- vegdist(otu_wide, method="bray")
-otu_dist
+summary(otu_dist)
 
 ### ----
 ### ----
 ### Trying CCA ----
-otu_wide %>%
-  metaMDS(trace = F) %>%
-  ordiplot(type = "none") %>%
-  text("sites")
+# make the otu wide into a matrix for the cca model
+View(otu_wide)
+otu_matrix<- as.matrix(otu_wide)
+View(otu_matrix)
 
-cca_result <- cca(otu_wide, treatments)
-cca_result
-plot(cca_result)
-data(varespec)
-View(varespec)
+# do a hellinger transformation because we are using raw counts: 
+otu_hell <- decostand(otu_matrix, method = "hellinger")
 
+# create the cca model with interactions and use the treatments data frame for grouping
+cca_model_interaction <- cca(otu_hell ~ Duration * Temperature, data = treatments)
+summary(cca_model_interaction)
+anova(cca_model_interaction)
+# initial visualization
+plot(cca_model, display = c("sites", "species"))
+
+# model cca without interaction term
+cca_model_basic<- cca(otu_hell ~ Duration + Temperature, data = treatments)
+summary(cca_model_basic)
+anova(cca_model_basic)
+
+#adjusted r2 for the two models:
+RsquareAdj(cca_model_basic)
+RsquareAdj(cca_model_interaction)
+
+# does interaction term improve the model?
+anova(cca_model_basic, cca_model_interaction, by = "terms", permutations = 999)
+
+# do each of the models explain the variation in the data?:
+anova(cca_model_basic, permutations = 999)  # Test overall model without interaction
+anova(cca_model_interaction, permutations = 999)  # Test overall model with interaction
 ### ----
 ### ----
 ### Heat Maps ----
