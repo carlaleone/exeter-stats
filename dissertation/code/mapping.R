@@ -18,7 +18,7 @@ bbox1
 query <- opq(bbox1)
 
 
-bathy<- rast("data/Mean depth in multi colour (no land).geotif 2")
+bathy<- rast("data/Mean depth rainbow colour (no land).geotif")
 plot(bathy)
 terra::describe(bathy)
 
