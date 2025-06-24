@@ -18,9 +18,11 @@ bbox1
 query <- opq(bbox1)
 
 
-bathy<- rast("data/Mean depth rainbow colour (no land).geotif")
+bathy<- rast("data/Mean depth in multi colour (no land).geotif 2")
 plot(bathy)
 terra::describe(bathy)
+r_depth <- bathy * 0.01666667 
+plot(r_depth)
 
 coast <- opq(bbox = bbox1) %>%
   add_osm_feature(key = "natural", value = "coastline") %>%
