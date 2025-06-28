@@ -3,19 +3,17 @@
 # 19 June 2025
 
 ### Tring OSM Data ----
-install.packages("osmdata")
-library(osmdata)
-library(sf)
-library(terra)
-library(viridis)
-?st_bbox
+library(pacman)
+pacman::p_load(osmdata, sf, terra, tidyverse, colorspace, tidyterra)
+getwd()
+setwd("/Users/carlaleone/Desktop/Exeter/dissertation")
 
-bbox <- as.numeric(st_bbox(c(xmin = -5.2233, xmax = -4.8556, ymax = 50.2340, ymin = 50.0931), crs = st_crs(3857)))
+bbox <- as.numeric(st_bbox(c(xmin = -5.159896, xmax = -4.874479, ymax = 50.10781, ymin = 50.23385), crs = st_crs(3857)))
 bbox
 
 bbox1<- as.numeric(st_bbox(bathy,crs = st_crs(4326)))
 bbox1
-query <- opq(bbox1)
+query <- opq(bbox)
 
 
 bathy<- rast("data/Mean depth in multi colour (no land).geotif 2")
@@ -24,12 +22,12 @@ terra::describe(bathy)
 r_depth <- bathy * 0.01666667 
 plot(r_depth)
 
-coast <- opq(bbox = bbox1) %>%
+coast <- opq(bbox = bbox) %>%
   add_osm_feature(key = "natural", value = "coastline") %>%
   osmdata_sf()
 coast <- coast$osm_lines 
 
-bathy_extent <- as.polygons(ext(bathy), crs = crs(bathy)) |> st_as_sf()
+bathy_extent <- as.polygons(ext(depth_rast), crs = crs(depth_rast)) |> st_as_sf()
 coast <- st_transform(coast, crs(bathy_extent))
 coast_clipped <- st_intersection(coast, bathy_extent)
 
@@ -78,3 +76,33 @@ ggplot() +
   geom_sf(data = coast_clipped, color = "black", lwd = 1.0) +
   coord_sf(xlim = c(-5.173958, -4.861458), ylim = c(50.103125, 50.23333), expand = TRUE) +
   theme_classic()
+
+### Trying with data in csv format----
+getwd()
+df <- read_csv("data/Mean depth rainbow colour (no land).csv")
+head(df)
+df$elevation<- as.numeric(df$elevation)
+df<- df %>% filter(!is.na(elevation))
+
+
+points_sf <- st_as_sf(df, coords = c("longitude", "latitude"), crs = 4326)
+# Define raster template (resolution: 0.01 degrees here)
+template_rast <- rast(ext(points_sf), resolution = 0.001)
+
+# Rasterize the depth values
+depth_rast <- rasterize(points_sf, template_rast, field = "elevation")
+depth_rast
+res(depth_rast)
+writeRaster(depth_rast,
+            filename = "~/Desktop/depth_raster.tif",
+            filetype = "GTiff",      
+            overwrite = TRUE)
+
+depth_df <- as.data.frame(depth_rast, xy = TRUE, na.rm = TRUE)
+head(depth_df)
+
+hcl_palettes(plot=TRUE)
+ggplot() +
+  geom_spatraster(data = depth_rast) +
+  scale_fill_continuous_sequential("Blues 3", na.value = "transparent", rev= FALSE) 
+
