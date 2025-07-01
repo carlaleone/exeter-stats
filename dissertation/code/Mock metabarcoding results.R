@@ -4,7 +4,7 @@
 
 ### Load data and packages ----
 library(pacman)
-pacman::p_load(stringr, tidyverse, readxl, patchwork, flextable, readr, vegan)
+pacman::p_load(stringr, tidyverse, readxl, patchwork, flextable, readr, BiodiversityR)
 getwd()
 setwd("/Users/carlaleone/Desktop/Exeter/dissertation")
 meta <- read_excel("data/mock_data.xls") #use read csv next time
@@ -152,9 +152,13 @@ treatments
 # bray curtis matrix of dissimilarity
 otu_dist<- vegdist(otu_wide, method="bray")
 summary(otu_dist)
-
 ### ----
 ### ----
+### SAC trials ----
+install.packages("BiodiversityR")
+library(BiodiversityR)
+###----
+###----
 ### Trying CCA ----
 # make the otu wide into a matrix for the cca model
 View(otu_wide)
