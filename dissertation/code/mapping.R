@@ -4,16 +4,15 @@
 
 ### Tring OSM Data ----
 library(pacman)
-pacman::p_load(osmdata, sf, terra, tidyverse, colorspace, tidyterra)
-getwd()
-setwd("/Users/carlaleone/Desktop/Exeter/dissertation")
+pacman::p_load(osmdata, sf, terra, marmap)
 
-bbox <- as.numeric(st_bbox(c(xmin = -5.159896, xmax = -4.874479, ymax = 50.10781, ymin = 50.23385), crs = st_crs(3857)))
+
+bbox <- as.numeric(st_bbox(c(xmin = -5.2233, xmax = -4.8556, ymax = 50.2340, ymin = 50.0931), crs = st_crs(3857)))
 bbox
 
 bbox1<- as.numeric(st_bbox(bathy,crs = st_crs(4326)))
 bbox1
-query <- opq(bbox)
+query <- opq(bbox1)
 
 
 bathy<- rast("data/Mean depth in multi colour (no land).geotif 2")
@@ -22,12 +21,12 @@ terra::describe(bathy)
 r_depth <- bathy * 0.01666667 
 plot(r_depth)
 
-coast <- opq(bbox = bbox) %>%
+coast <- opq(bbox = bbox1) %>%
   add_osm_feature(key = "natural", value = "coastline") %>%
   osmdata_sf()
 coast <- coast$osm_lines 
 
-bathy_extent <- as.polygons(ext(depth_rast), crs = crs(depth_rast)) |> st_as_sf()
+bathy_extent <- as.polygons(ext(bathy), crs = crs(bathy)) |> st_as_sf()
 coast <- st_transform(coast, crs(bathy_extent))
 coast_clipped <- st_intersection(coast, bathy_extent)
 
@@ -77,42 +76,6 @@ ggplot() +
   coord_sf(xlim = c(-5.173958, -4.861458), ylim = c(50.103125, 50.23333), expand = TRUE) +
   theme_classic()
 
-### Trying with data in csv format----
-getwd()
-df <- read_csv("data/Mean depth rainbow colour (no land).csv")
-head(df)
-df$elevation<- as.numeric(df$elevation)
-df<- df %>% filter(!is.na(elevation))
-
-
-points_sf <- st_as_sf(df, coords = c("longitude", "latitude"), crs = crs(depth_rast))
-# Define raster template (resolution: 0.01 degrees here)
-template_rast <- rast(ext(points_sf), resolution = 0.001,crs = crs(depth_rast) )
-
-
-# Rasterize the depth values
-depth_rast <- rasterize(points_sf, template_rast, field = "elevation")
-plot(depth_rast)
-
-depth_df <- as.data.frame(depth_rast, xy = TRUE)
-
-ggplot(depth_df, aes(x = x, y = y, fill = last)) +
-  geom_tile() +  # Helps reduce grid lines
-  scale_fill_viridis_c() +
-  theme_minimal()
-
-depth_rast
-res(depth_rast)
-writeRaster(depth_rast,
-            filename = "~/Desktop/depth_raster.tif",
-            filetype = "GTiff",      
-            overwrite = TRUE)
-
-depth_df <- as.data.frame(depth_rast, xy = TRUE, na.rm = TRUE)
-head(depth_df)
-
-hcl_palettes(plot=TRUE)
-ggplot() +
-  geom_spatraster(data = depth_rast) +
-  scale_fill_continuous_sequential("Blues 3", na.value = "transparent", rev= FALSE) 
-
+### trying built-in r database from NOAA ----
+bathy <- getNOAA.bathy(lon1 = -5.2233, lon2 = -4.8556, lat1 = 50.2340, lat2 = 50.0931, resolution = 1)
+plot(bathy, image = TRUE)
