@@ -85,12 +85,22 @@ df$elevation<- as.numeric(df$elevation)
 df<- df %>% filter(!is.na(elevation))
 
 
-points_sf <- st_as_sf(df, coords = c("longitude", "latitude"), crs = 4326)
+points_sf <- st_as_sf(df, coords = c("longitude", "latitude"), crs = crs(depth_rast))
 # Define raster template (resolution: 0.01 degrees here)
-template_rast <- rast(ext(points_sf), resolution = 0.001)
+template_rast <- rast(ext(points_sf), resolution = 0.001,crs = crs(depth_rast) )
+
 
 # Rasterize the depth values
 depth_rast <- rasterize(points_sf, template_rast, field = "elevation")
+plot(depth_rast)
+
+depth_df <- as.data.frame(depth_rast, xy = TRUE)
+
+ggplot(depth_df, aes(x = x, y = y, fill = last)) +
+  geom_tile() +  # Helps reduce grid lines
+  scale_fill_viridis_c() +
+  theme_minimal()
+
 depth_rast
 res(depth_rast)
 writeRaster(depth_rast,

@@ -4,13 +4,17 @@
 
 ### Load data and packages ----
 library(pacman)
-pacman::p_load(stringr, tidyverse, readxl, patchwork, flextable, readr)
+pacman::p_load(stringr, tidyverse, readxl, patchwork, flextable, readr, vegan)
+install.packages("BiodiversityR")
+library(BiodiversityR)
 getwd()
 setwd("/Users/carlaleone/Desktop/Exeter/dissertation")
 meta <- read_excel("data/mock_data.xls") #use read csv next time
 meta$Duration <- as.numeric(gsub("w", "", meta$Duration))
 meta
 
+### ----
+### ----
 ### Exploring the number of reads----
 # summary table for the number of Reads
 summary_meta <- meta %>%
@@ -36,6 +40,8 @@ ggplot(summary_table, aes(x = Duration, y = Mean_Read, color = Temperature,fill 
 boxplot(meta$Reads ~ meta$Duration)
 # seems like fewer reads in week 4
 
+###----
+###----
 ### Exploring OTUs----
 unique(meta$Order)
 # Total of 6 orders Identified
@@ -61,7 +67,9 @@ summary_taxa$Duration <- as.numeric(gsub("w", "", summary_taxa$Duration))
 View(summary_taxa)
 
 
-### Initial Plots for number of taxa of differen levels ----
+### ----
+###----
+### Initial Plots for number of taxa of different levels ----
 
 
 #plot the number of species
@@ -94,6 +102,8 @@ n_order<- ggplot(summary_taxa, aes(x = Duration, y = unique_orders, color = Temp
 library(gridExtra)
 grid.arrange(n_species, n_family, n_order, ncol = 3)
 
+### ----
+### ----
 ### Linear Model Analysis----
 
 # I want to know whether there is a statistically significant difference in the number of species/order/family being detected
@@ -110,6 +120,8 @@ summary(lm(unique_families ~ Duration*Temperature, data = summary_taxa))
 
 
 
+###----
+###----
 ### Community analysis ----
 meta$SampleID<- paste0(substr(meta$Temperature, 1, 1), meta$Duration)
 meta
@@ -121,13 +133,17 @@ View(species_long)
 
 
 # then we want to pivot the data set to make it wide, so that each species is in its own columns. 
-wide<- species_wide %>% 
+wide<- species_long %>% 
   pivot_wider(
     names_from = Species, # columns are the names from the fish families
     values_from = Reads, # values come from the quantity column measured earlier
     values_fn = mean,  # taking the mean of the repeated values
     values_fill = 0) 
 View(wide)
+
+#make the SAMPLEID row names
+wide<- wide %>%
+  column_to_rownames(var = "SampleID")
 
 
 # Make a separate data set which gives the treatment for each replicate
@@ -139,3 +155,11 @@ temp_groups
 time_groups <- meta %>%
   distinct(SampleID, Duration)
 time_groups
+
+### ----
+###----
+### SAC Curves ----
+
+Accum.1 <- accumresult(wide, y=temp_groups, factor='SampleID', 
+                     method='exact', conditioned=FALSE, plotit=FALSE)
+Accum.1
