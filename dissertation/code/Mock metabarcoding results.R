@@ -3,8 +3,9 @@
 # Carla Leone
 
 ### Load data and packages ----
+install.packages("pacman")
 library(pacman)
-pacman::p_load(stringr, tidyverse, readxl, patchwork, flextable, readr, BiodiversityR)
+pacman::p_load(stringr, tidyverse, readxl, patchwork, flextable, readr, vegan)
 getwd()
 setwd("/Users/carlaleone/Desktop/Exeter/dissertation")
 meta <- read_excel("data/mock_data.xls") #use read csv next time
@@ -136,7 +137,7 @@ otu_wide<- otu_long %>%
     values_from = Reads, # values come from the quantity column measured earlier
     values_fn = mean,  # taking the mean of the repeated values
     values_fill = 0) 
-otu_wide
+View(otu_wide)
 
 # make sure sample ID is the row names not an actual row
 otu_wide<- otu_wide %>%
@@ -157,6 +158,18 @@ summary(otu_dist)
 ### SAC trials ----
 install.packages("BiodiversityR")
 library(BiodiversityR)
+
+# subset the matrix to just be frozen treatments
+samples_fr <- treatments$SampleID[treatments$Temperature == "Frozen"]
+frozen_matrix <- otu_wide[samples_fr, ]
+View(frozen_matrix)
+
+sac_freezer <- specaccum(frozen_matrix, method = "random")
+
+Accum.1 <- accumcomp(otu_wide, y=treatments, factor='SampleID', 
+                     method='exact', conditioned=FALSE, plotit=FALSE)
+Accum.1
+
 ###----
 ###----
 ### Trying CCA ----
