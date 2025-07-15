@@ -149,6 +149,10 @@ treatments<- meta %>%
   distinct(SampleID, Temperature, Duration)
 treatments
 
+# Making the matrix relative abundances because sequencing depth can be different for different samples
+otu_ra <- decostand(otu_wide, "hellinger") #hellinger transformation is also an option, it is the square root of the total
+?decostand()
+View(otu_ra)
 
 # bray curtis matrix of dissimilarity
 otu_dist<- vegdist(otu_wide, method="bray")
@@ -159,16 +163,50 @@ summary(otu_dist)
 install.packages("BiodiversityR")
 library(BiodiversityR)
 
-# subset the matrix to just be frozen treatments
+# subset the matrix into each of the treatments
+#frozen
 samples_fr <- treatments$SampleID[treatments$Temperature == "Frozen"]
 frozen_matrix <- otu_wide[samples_fr, ]
-View(frozen_matrix)
+#ambient
+samples_a <- treatments$SampleID[treatments$Temperature == "Ambient"]
+a_matrix <- otu_wide[samples_a, ]
+#w0
+samples_0 <- treatments$SampleID[treatments$Duration == "0"]
+matrix_0 <- otu_wide[samples_0, ]
+#w1
+samples_1 <- treatments$SampleID[treatments$Duration == "1"]
+matrix_1 <- otu_wide[samples_1, ]
+#w2
+samples_2 <- treatments$SampleID[treatments$Duration == "2"]
+matrix_2 <- otu_wide[samples_2, ]
+#w4
+samples_4 <- treatments$SampleID[treatments$Duration == "4"]
+matrix_4 <- otu_wide[samples_4, ]
 
+# then calculate the sac for each matrix subset
 sac_freezer <- specaccum(frozen_matrix, method = "random")
+sac_ambient<- specaccum(a_matrix, method = "random")
 
-Accum.1 <- accumcomp(otu_wide, y=treatments, factor='SampleID', 
+#Accum.1 <- accumcomp(otu_wide, y=treatments, factor='SampleID', 
                      method='exact', conditioned=FALSE, plotit=FALSE)
-Accum.1
+
+
+###----
+###----
+### PERMANOVA ----
+# dont need to do tranformation before PERMANOVA because bray-curtis already calculate rel abundance...
+# but need to check for dispersion in groups:
+betadispersion <- betadisper(vegdist(otu_wide, method = "bray"), treatments$Temperature)
+permutest(betadispersion)
+anova(betadispersion)
+plot(betadispersion)
+
+# do the hellinger transformation
+otu_hel <- decostand(otu_matrix, method = "hellinger") 
+# calculate the distance matrix
+otu_dist<- vegdist(otu_wide, method="bray")
+# do the PERMANOVA
+adonis2(otu_wide ~ Temperature * Duration, data = treatments, permutations = 9999)
 
 ###----
 ###----
@@ -178,15 +216,17 @@ View(otu_wide)
 otu_matrix<- as.matrix(otu_wide)
 View(otu_matrix)
 
-# do a hellinger transformation because we are using raw counts: 
-otu_hell <- decostand(otu_matrix, method = "hellinger")
-out_hell
+# use hellinger transformation from earlier
+otu_hel <- decostand(otu_matrix, method = "hellinger") 
 
-# create the cca model with interactions and use the treatments data frame for grouping
-cca_model_interaction <- cca(otu_hell ~ Duration * Temperature, data = treatments)
-summary(cca_model_interaction)
-anova(cca_model_interaction)
-# initial visualization
+#make duration a factor (says to do so if you suspect that the relationship is not linear)
+treatments$Duration <- as.factor(treatments$Duration)
+
+cca_model <- cca(otu_hel ~ Temperature * Duration, data = treatments)
+plot(cca_model)
+anova(cca_model, by = "term")  # tests each term: Temp, Time, and interaction
+
+# another visualization
 plot(cca_model, display = c("sites", "species"))
 
 # model cca without interaction term
@@ -248,3 +288,11 @@ pheatmap(hellinger_matrix,
 # basic heatmap
 heatmap(frozen_matrix,Colv = NA, Rowv = NA,  scale="column", xlab="Weeks in Storage")
 
+
+#----
+#----
+### Citations----
+install.packages("report")
+library(report)
+
+cite_packages()
