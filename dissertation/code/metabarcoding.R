@@ -9,7 +9,7 @@ pacman::p_load(stringr, tidyverse, readxl, patchwork, flextable, readr, vegan)
 getwd()
 setwd("/Users/carlaleone/Desktop/Exeter/dissertation")
 metabarcoding_data <- read_csv("data/metabarcoding_results.csv") 
-View(meta)
+View(metabarcoding_data)
 
 
 ###----
@@ -22,8 +22,17 @@ meta <- meta %>%
   filter(!Species %in% c("Homo sapiens", "Canis lupus", "Skip", "Bos primigenius", "Danio rerio"))
 # remove species that are not feasible or useable for the analysis
 
+# add samples that would have had no reads
+all_samples_B<- read_xlsx("data/all samples.xlsx") # with blanks
+all_samples<- all_samples_B %>%
+  filter(!`Sample ID` %in% c("B0", "B1", "B2", "B4", "B8"))
 
-df <- meta %>%
+full_meta <- all_samples %>%
+  left_join(meta, by = "Sample ID")
+View(full_meta)
+
+
+df <- full_meta %>%
   mutate(
     temperature = str_extract(`Sample ID`, "^[A-Z]+"),  # A, B, FR
     duration = as.numeric(str_remove_all(
@@ -66,11 +75,92 @@ summary_meta <- meta %>%
     Count = n()
   )
 View(summary_meta)
+
+
+# summary of unfiltered results. 
+
+summary_all_positive<- metabarcoding_data %>% drop_na(Species)
+
+summary_all_positive<- summary_all_positive %>%
+  group_by(`Sample ID`) %>%
+  summarize(
+    Total_Read = sum(`Total read`, na.rm = TRUE)) %>%
+  ungroup()
+  
+summary_all_positive <-summary_all_positive %>%
+  filter(!`Sample ID` %in% c("NTC_seq", "NTC_seq2", "PTC_seq", "PTC_seq2"))
+
+View(summary_all_positive)
+sum(summary_all_positive$Total_Read )
+
+summary_positive_detections <- metabarcoding_data %>%
+  group_by(`Sample ID`, duration, temperature) %>%
+  summarize(
+    Total_Read = sum(`Total read`, na.rm = TRUE)) %>%
+  ungroup()
+
+View(summary_positive_detections)
+
+
+sum(meta$`Total read`, na.rm = TRUE)
+# total number of reads = 684365
+
+
 # next need to find out whether I can add 0s for the replicates that had 0 detections.
+#----
+#----
+### Including NAs----
 
+na_meta<- meta %>% 
+  filter(is.na(`Total read`)) %>%
+  mutate(`Total read` = 0.1) 
+#yield give a pseudo number just for visualization = 0.1) #yield give a pseudo number just for visualization
 
+na_meta <- na_meta %>%
+  group_by(`Sample ID`, temperature, duration) %>%
+  summarise(richness = mean(`Total read`)) %>%
+  ungroup()
 
+View(na_meta)
 
+na_meta$`No detection` <- "0"
+
+#----
+#----
+### Species Richness ----
+sp_rich <- meta %>%
+  group_by(`Sample ID`, temperature, duration) %>%
+  summarise(richness = n_distinct(`Species`)) %>%
+  ungroup()
+
+View(sp_rich)
+
+sp_rich$duration<- as.numeric(sp_rich$duration)
+sp_rich$richness<- as.numeric(sp_rich$richness)
+
+#plot species richness
+meta_richness_plot<- ggplot(sp_rich, aes(x = duration, y = richness, color = temperature,fill = temperature, group = temperature)) +
+  geom_smooth(method=lm) +
+  geom_point(data = sp_rich) +
+  geom_point(data = na_meta,
+             aes(shape = `No detection`, color = temperature),
+             position = position_jitterdodge(), size = 1.8) +  # X points
+  scale_shape_manual(values = c("0" = 4)) +
+  labs(
+    x = "Time (Weeks of storage)",
+    y = "Number of species detected"
+  ) + # Use in a ggplot2 chart:
+  scale_colour_paletteer_d("lisa::BridgetRiley") +
+  scale_fill_paletteer_d("lisa::BridgetRiley") +
+  scale_x_continuous(breaks = c(0,1,2,3,4,5,6,7,8)) +
+  theme_classic() +
+  theme(text = element_text(size = 15))
+
+meta_richness_plot
+
+#----
+#----
+#
 #plot
 readnumber.plot<- ggplot(summary_table, aes(x = Duration, y = Mean_Read, color = Temperature,fill = Temperature, group = Temperature)) +
   geom_line() +
