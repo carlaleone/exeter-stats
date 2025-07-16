@@ -92,19 +92,81 @@ summary_all_positive <-summary_all_positive %>%
 
 View(summary_all_positive)
 sum(summary_all_positive$Total_Read )
+#sum of all reads = 3,304,926
 
-summary_positive_detections <- metabarcoding_data %>%
-  group_by(`Sample ID`, duration, temperature) %>%
+# summary of filtered data
+filtered_detections_summary<- meta %>%
+  group_by(`Sample ID`) %>%
   summarize(
-    Total_Read = sum(`Total read`, na.rm = TRUE)) %>%
+    Mean_Read = mean(`Total read`, na.rm = TRUE),
+    SD_Read = sd(`Total read`, na.rm = TRUE),
+    Total_Read = sum(`Total read`, na.rm = TRUE),
+    Count = n()) %>%
   ungroup()
 
-View(summary_positive_detections)
+View(filtered_detections_summary)
 
+temp_detections_summary <- meta %>%
+  group_by(temperature) %>%
+  summarize(
+    Mean_Read = mean(`Total read`, na.rm = TRUE),
+    SD_Read = sd(`Total read`, na.rm = TRUE),
+    Total_Read = sum(`Total read`, na.rm = TRUE),
+    Count = n()) %>%
+  ungroup()
+
+View(temp_detections_summary)
+
+# total reads with duration
+duration_detections_summary <- meta %>%
+  group_by(duration) %>%
+  summarize(
+    Mean_Read = mean(`Total read`, na.rm = TRUE),
+    SD_Read = sd(`Total read`, na.rm = TRUE),
+    Total_Read = sum(`Total read`, na.rm = TRUE),
+    Count = n()) %>%
+  ungroup()
+
+
+View(duration_detections_summary)
+
+# total reads including duration and temp
+treatment_detections_summary <- meta %>%
+  group_by(duration, temperature) %>%
+  summarize(
+    Mean_Read = mean(`Total read`, na.rm = TRUE),
+    SD_Read = sd(`Total read`, na.rm = TRUE),
+    Total_Read = sum(`Total read`, na.rm = TRUE),
+    Count = n()) %>%
+  ungroup()
+
+
+View(treatment_detections_summary)
 
 sum(meta$`Total read`, na.rm = TRUE)
 # total number of reads = 684365
 
+boxplot(meta$`Total read` ~ meta$temperature)
+boxplot(meta$`Total read` ~ meta$duration)
+#----
+#----
+### Figures for read numbers (appendix) ----
+ggplot(data = meta, aes(x = factor(temperature), y = `Total read`, fill = temperature)) +
+  geom_boxplot(position = position_dodge(width = 0.75)) +
+  facet_wrap(~ duration, scales = "free", ncol = 2) +
+  labs(
+    x = "Temperature",
+    y = "Read Count",
+    fill = "Temperature"
+  ) +
+  scale_fill_manual(values = c("Ambient" = "#F4ADA7", "Frozen" = "#76B451")) +
+  theme_classic() +
+  theme(
+    strip.text = element_text(size = 12, face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    text = element_text(size = 14),
+    legend.position ="none"
+  )
 
 # next need to find out whether I can add 0s for the replicates that had 0 detections.
 #----
@@ -113,7 +175,7 @@ sum(meta$`Total read`, na.rm = TRUE)
 
 na_meta<- meta %>% 
   filter(is.na(`Total read`)) %>%
-  mutate(`Total read` = 0.1) 
+  mutate(`Total read` = 0.8) 
 #yield give a pseudo number just for visualization = 0.1) #yield give a pseudo number just for visualization
 
 na_meta <- na_meta %>%
@@ -123,45 +185,58 @@ na_meta <- na_meta %>%
 
 View(na_meta)
 
-na_meta$`No detection` <- "0"
+na_meta$`NA` <- "No species detected"
+na_meta <- na_meta %>%
+  mutate(Treatment = toupper(temperature))
 
 #----
 #----
 ### Species Richness ----
+View(meta)
 sp_rich <- meta %>%
   group_by(`Sample ID`, temperature, duration) %>%
-  summarise(richness = n_distinct(`Species`)) %>%
+  summarise(richness = n_distinct(`Species`,na.rm = TRUE)) %>%
   ungroup()
+
+sp_rich <-sp_rich %>%
+  filter(!richness %in% c("0"))
 
 View(sp_rich)
 
 sp_rich$duration<- as.numeric(sp_rich$duration)
 sp_rich$richness<- as.numeric(sp_rich$richness)
+sp_rich <- sp_rich %>%
+  mutate(Treatment = toupper(temperature))
+
 
 #plot species richness
-meta_richness_plot<- ggplot(sp_rich, aes(x = duration, y = richness, color = temperature,fill = temperature, group = temperature)) +
-  geom_smooth(method=lm) +
-  geom_point(data = sp_rich) +
+meta_richness_plot<- ggplot(sp_rich, aes(x = duration, y = richness, color = Treatment,fill = Treatment, group = Treatment)) +
+  geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = FALSE) +
+  geom_point(data = sp_rich, shape = 21, position = position_jitterdodge(), size = 2.3) +
   geom_point(data = na_meta,
-             aes(shape = `No detection`, color = temperature),
-             position = position_jitterdodge(), size = 1.8) +  # X points
-  scale_shape_manual(values = c("0" = 4)) +
+             aes(shape = `NA`, color = Treatment),
+             position = position_jitterdodge(), size = 3.8) +  # X points
+  scale_shape_manual(values = c("No species detected" = 4)) +
   labs(
     x = "Time (Weeks of storage)",
-    y = "Number of species detected"
+    y = "Number of species detected",
+    shape = NULL
   ) + # Use in a ggplot2 chart:
   scale_colour_paletteer_d("lisa::BridgetRiley") +
   scale_fill_paletteer_d("lisa::BridgetRiley") +
-  scale_x_continuous(breaks = c(0,1,2,3,4,5,6,7,8)) +
+  scale_x_continuous(breaks = c(0,1,2,3,4,5,6,7,8))+
+  scale_y_continuous(breaks = c(1,2,3))+
   theme_classic() +
   theme(text = element_text(size = 15))
 
 meta_richness_plot
 
+?geom_point
 #----
 #----
-#
-#plot
+### Plot Reads ----
+View(filtered_detections_summary)
+
 readnumber.plot<- ggplot(summary_table, aes(x = Duration, y = Mean_Read, color = Temperature,fill = Temperature, group = Temperature)) +
   geom_line() +
   geom_point() +
