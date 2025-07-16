@@ -62,10 +62,14 @@ summary_meta <- meta %>%
   summarize(
     Mean_Read = mean(`Total read`, na.rm = TRUE),
     SD_Read = sd(`Total read`, na.rm = TRUE),
+    Total_Read = sum(`Total read`, na.rm = TRUE),
     Count = n()
   )
 View(summary_meta)
 # next need to find out whether I can add 0s for the replicates that had 0 detections.
+
+
+
 
 #plot
 readnumber.plot<- ggplot(summary_table, aes(x = Duration, y = Mean_Read, color = Temperature,fill = Temperature, group = Temperature)) +
