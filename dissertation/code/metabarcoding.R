@@ -216,7 +216,6 @@ meta_richness_plot<- ggplot(sp_rich, aes(x = duration, y = richness, color = Tre
   geom_point(data = na_meta,
              aes(shape = `NA`, color = Treatment),
              position = position_jitterdodge(), size = 3.8) +  # X points
-  scale_shape_manual(values = c("No species detected" = 4)) +
   labs(
     x = "Time (Weeks of storage)",
     y = "Number of species detected",
@@ -227,8 +226,35 @@ meta_richness_plot<- ggplot(sp_rich, aes(x = duration, y = richness, color = Tre
   scale_x_continuous(breaks = c(0,1,2,3,4,5,6,7,8))+
   scale_y_continuous(breaks = c(1,2,3))+
   theme_classic() +
+  scale_shape_manual(values = c("No species detected" = 4)) +
   theme(text = element_text(size = 15))
 
+
+
+meta_richness_plot <- ggplot(sp_rich, aes(x = duration, y = richness, color = Treatment, fill = Treatment, group = Treatment)) +
+  geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = FALSE) +
+  coord_cartesian(ylim = c(0.7, NA)) +
+  geom_point(data = sp_rich, shape = 21, position = position_jitterdodge(), size = 2.3) +
+  geom_point(data = na_meta,
+             aes(shape = `NA`, color = Treatment),
+             position = position_jitterdodge(), size = 3.8) +
+  labs(
+    x = "Time (Weeks of storage)",
+    y = "Number of species detected",
+    shape = NULL
+  ) +
+  scale_colour_paletteer_d("lisa::BridgetRiley") +
+  scale_fill_paletteer_d("lisa::BridgetRiley") +
+  scale_x_continuous(breaks = c(0, 1, 2, 3, 4, 5, 6, 7, 8)) +
+  scale_y_continuous(breaks = c(1, 2, 3)) +
+  scale_shape_manual(values = c("No species detected" = 4)) +
+  theme_classic() +
+  theme(text = element_text(size = 15)) +
+  guides(
+    color = guide_legend(order = 1),
+    fill = "none",
+    shape = guide_legend(order = 3)  # Make shape legend come last
+  ) 
 meta_richness_plot
 
 ?geom_point
