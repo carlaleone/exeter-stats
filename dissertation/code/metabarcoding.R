@@ -26,6 +26,7 @@ meta <- meta %>%
 all_samples_B<- read_xlsx("data/all samples.xlsx") # with blanks
 all_samples<- all_samples_B %>%
   filter(!`Sample ID` %in% c("B0", "B1", "B2", "B4", "B8"))
+View(all_samples)
 
 full_meta <- all_samples %>%
   left_join(meta, by = "Sample ID")
@@ -171,8 +172,11 @@ ggplot(data = meta, aes(x = factor(temperature), y = `Total read`, fill = temper
 # next need to find out whether I can add 0s for the replicates that had 0 detections.
 #----
 #----
-### Including NAs----
+### Including NAs: NAs can be added as 0s----
+full_meta <- full_meta %>%
+  replace_na(list(`Total read` = 0))
 
+View(full_meta)
 na_meta<- meta %>% 
   filter(is.na(`Total read`)) %>%
   mutate(`Total read` = 0.8) 
@@ -198,9 +202,6 @@ sp_rich <- meta %>%
   summarise(richness = n_distinct(`Species`,na.rm = TRUE)) %>%
   ungroup()
 
-sp_rich <-sp_rich %>%
-  filter(!richness %in% c("0"))
-
 View(sp_rich)
 
 sp_rich$duration<- as.numeric(sp_rich$duration)
@@ -211,26 +212,27 @@ sp_rich <- sp_rich %>%
 
 #plot species richness
 meta_richness_plot<- ggplot(sp_rich, aes(x = duration, y = richness, color = Treatment,fill = Treatment, group = Treatment)) +
-  geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = FALSE) +
+  geom_smooth(method = "lm", formula = y ~ x + I(x^2))+ 
   geom_point(data = sp_rich, shape = 21, position = position_jitterdodge(), size = 2.3) +
-  geom_point(data = na_meta,
-             aes(shape = `NA`, color = Treatment),
-             position = position_jitterdodge(), size = 3.8) +  # X points
+  #geom_point(data = na_meta,
+   #          aes(shape = `NA`, color = Treatment),
+    #         position = position_jitterdodge(), size = 3.8) +  # X points
   labs(
     x = "Time (Weeks of storage)",
     y = "Number of species detected",
-    shape = NULL
+   # shape = NULL
   ) + # Use in a ggplot2 chart:
   scale_colour_paletteer_d("lisa::BridgetRiley") +
   scale_fill_paletteer_d("lisa::BridgetRiley") +
   scale_x_continuous(breaks = c(0,1,2,3,4,5,6,7,8))+
-  scale_y_continuous(breaks = c(1,2,3))+
+  scale_y_continuous(breaks = c(0,1,2,3))+
   theme_classic() +
   scale_shape_manual(values = c("No species detected" = 4)) +
   theme(text = element_text(size = 15))
 
+meta_richness_plot
 
-
+#night not need this
 meta_richness_plot <- ggplot(sp_rich, aes(x = duration, y = richness, color = Treatment, fill = Treatment, group = Treatment)) +
   geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = FALSE) +
   coord_cartesian(ylim = c(0.7, NA)) +
@@ -247,7 +249,7 @@ meta_richness_plot <- ggplot(sp_rich, aes(x = duration, y = richness, color = Tr
   scale_fill_paletteer_d("lisa::BridgetRiley") +
   scale_x_continuous(breaks = c(0, 1, 2, 3, 4, 5, 6, 7, 8)) +
   scale_y_continuous(breaks = c(1, 2, 3)) +
-  scale_shape_manual(values = c("No species detected" = 4)) +
+  #scale_shape_manual(values = c("No species detected" = 4)) +
   theme_classic() +
   theme(text = element_text(size = 15)) +
   guides(
@@ -258,6 +260,28 @@ meta_richness_plot <- ggplot(sp_rich, aes(x = duration, y = richness, color = Tr
 meta_richness_plot
 
 ?geom_point
+#----
+#----
+### Model sp richness ----
+hist(sp_rich$richness)
+richness_glm<- glm(richness~ duration + temperature, data= sp_rich, family = poisson (link = log))
+summary(richness_glm)
+
+35.455/37
+# dispersion parameter
+
+richness_simple<- glm(richness~ duration, data= sp_rich, family = poisson (link = log))
+summary(richness_glm)
+anova(richness_simple, richness_glm,  test="Chisq")
+anova(richness_glm)
+anova(richness_simple)
+
+drop1(richness_glm, test="Chisq")
+# not statistically significantly different to 
+
+plot(richness_glm)
+
+
 #----
 #----
 ### Plot Reads ----
@@ -277,117 +301,42 @@ readnumber.plot
 boxplot(meta$Reads ~ meta$Duration)
 # seems like fewer reads in week 4
 
-###----
-###----
-### Exploring OTUs----
-unique(meta$Order)
-# Total of 6 orders Identified
-
-unique(meta$Family)
-# Total of 7 families Identified
-
-unique(meta$Species)
-# Total of 14 species Identified
-
-#summary of taxa
-
-
-summary_taxa <- meta %>%
-  group_by(Duration, Temperature, Replicate) %>%
-  summarise(
-    unique_orders = n_distinct(Order),
-    unique_families = n_distinct(Family),
-    unique_species = n_distinct(Species)
-  )
-
-summary_taxa$Duration <- as.numeric(gsub("w", "", summary_taxa$Duration))
-summary_taxa
-
 ### ----
 ###----
-### Initial Plots for number of taxa of different levels ----
-
-#plot the number of species
-n_species<- ggplot(summary_taxa, aes(x = Duration, y = unique_species, color = Temperature,fill = Temperature, group = Temperature)) +
-  geom_smooth(method= glm, alpha = 0.2) +
-  #geom_point() +
-  labs(
-    x = "Time (Weeks of storage)",
-    y = "Number of species detected"
-  ) + theme_classic()
-
-#plot the nunber families
-n_family<- ggplot(summary_taxa, aes(x = Duration, y = unique_families, color = Temperature,fill = Temperature, group = Temperature)) +
-  geom_smooth(method= glm, alpha = 0.2) +
-  #geom_point() +
-  labs(
-    x = "Time (Weeks of storage)",
-    y = "Number of families detected"
-  ) + theme_classic()
-
-#plot the number of orders
-n_order<- ggplot(summary_taxa, aes(x = Duration, y = unique_orders, color = Temperature,fill = Temperature, group = Temperature)) +
-  geom_smooth(method= glm, alpha = 0.2) +
-  #geom_point() +
-  labs(
-    x = "Time (Weeks of storage)",
-    y = "Number of orders detected"
-  ) + theme_classic() 
-
-library(gridExtra)
-grid.arrange(n_species, n_family, n_order, ncol = 3)
-
-### ----
-### ----
-### Linear Model Analysis----
-
-# I want to know whether there is a statistically significant difference in the number of species/order/family being detected
-
-summary(glm(unique_species ~ Duration+Temperature, data = summary_taxa, family = quasipoisson))
-# not significant
-
-summary(lm(unique_orders ~ Duration*Temperature, data = summary_taxa))
-# not significant
-
-summary(lm(unique_families ~ Duration*Temperature, data = summary_taxa))
-# not significant
-
-
-
-
-### ----
-### ----
 ### Community analysis ----
-meta$SampleID<- paste0(substr(meta$Temperature, 1, 1), meta$Duration)
-meta
-meta$SampleID<- paste(meta$SampleID, meta$Replicate, sep = ".")
-meta
-
-otu_long<- subset(meta, select = c(SampleID, Species, Reads))
-otu_long
-
+# Select only the necessary columns
+meta_long<- meta %>%
+  select(`Sample ID`, `Species`, `Total read`)
+View(meta_long)
 
 # then we want to pivot the data set to make it wide, so that each species is in its own columns. 
-otu_wide<- otu_long %>% 
+meta_wide<- meta_long %>% 
   pivot_wider(
-    names_from = Species, # columns are the names from the fish families
-    values_from = Reads, # values come from the quantity column measured earlier
-    values_fn = mean,  # taking the mean of the repeated values
+    names_from = `Species`, # columns are the names from the fish families
+    values_from = `Total read`, # values come from the quantity column measured earlier
+    values_fn = sum,  # taking the mean of the repeated values
     values_fill = 0) 
-View(otu_wide)
+
+meta_wide <- meta_wide %>% select(-`NA`)
+View(meta_wide)
 
 # make sure sample ID is the row names not an actual row
-otu_wide<- otu_wide %>%
-  column_to_rownames(var = "SampleID")
-otu_wide
+meta_wide<- meta_wide %>%
+  column_to_rownames(var = "Sample ID")
+meta_wide_clean
 
 #make another data frame with the different categories for each Sample ID
 treatments<- meta %>%
-  distinct(SampleID, Temperature, Duration)
+  distinct(`Sample ID`, temperature, duration)
 treatments
 
+# treatments including only the data that has actual results
+treatments_clean <- treatments %>%
+  filter(`Sample ID` %in% c("A0_2", "A0_4", "A1_1", "A4_2", "A4_3", "A4_4", "A8_1", "A8_2", "A8_4", "FR0_1", "FR2_1", "FR2_2", "FR8_4"))
+View(treatments_clean)
+
 # Making the matrix relative abundances because sequencing depth can be different for different samples
-otu_ra <- decostand(otu_wide, "hellinger") #hellinger transformation is also an option, it is the square root of the total
+meta_ra <- decostand(meta_wide, "hellinger") #hellinger transformation is also an option, it is the square root of the total
 ?decostand()
 View(otu_ra)
 
@@ -431,9 +380,13 @@ method='exact', conditioned=FALSE, plotit=FALSE)
 ###----
 ###----
 ### PERMANOVA ----
+# need to remove rows that have all 0s
+meta_wide_clean <- meta_wide[rowSums(meta_wide) > 0, ]
+View(meta_wide_clean)
+
 # dont need to do tranformation before PERMANOVA because bray-curtis already calculate rel abundance...
 # but need to check for dispersion in groups:
-betadispersion <- betadisper(vegdist(otu_wide, method = "bray"), treatments$Temperature)
+betadispersion <- betadisper(vegdist(meta_wide_clean, method = "bray"), treatments_clean$temperature)
 permutest(betadispersion)
 anova(betadispersion)
 plot(betadispersion)
@@ -442,29 +395,35 @@ plot(betadispersion)
 otu_hel <- decostand(otu_matrix, method = "hellinger") 
 # calculate the distance matrix
 otu_dist<- vegdist(otu_wide, method="bray")
+
+
 # do the PERMANOVA
-adonis2(otu_wide ~ Temperature * Duration, data = treatments, permutations = 9999)
+adonis2(meta_wide_clean ~ duration*temperature , data = treatments_clean, permutations = 9999)
 
 ###----
 ###----
 ### Trying CCA ----
 # make the otu wide into a matrix for the cca model
-View(otu_wide)
-otu_matrix<- as.matrix(otu_wide)
-View(otu_matrix)
+
+meta_matrix<- as.matrix(meta_wide_clean)
+View(meta_matrix)
 
 # use hellinger transformation from earlier
-otu_hel <- decostand(otu_matrix, method = "hellinger") 
+meta_hel <- decostand(meta_matrix, method = "hellinger") 
 
 #make duration a factor (says to do so if you suspect that the relationship is not linear)
 treatments$Duration <- as.factor(treatments$Duration)
 
-cca_model <- cca(otu_hel ~ Temperature * Duration, data = treatments)
+cca_model <- cca(meta_hel ~ temperature + duration, data = treatments_clean)
 plot(cca_model)
 anova(cca_model, by = "term")  # tests each term: Temp, Time, and interaction
 
 # another visualization
 plot(cca_model, display = c("sites", "species"))
+
+# assess VIF for colinearity, if greater than 10 suggests high collinearity
+vif.cca(cca_model)
+# 1.035 
 
 # model cca without interaction term
 cca_model_basic<- cca(otu_hell ~ Duration + Temperature, data = treatments)
