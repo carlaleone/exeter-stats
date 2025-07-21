@@ -12,8 +12,8 @@ metabarcoding_data <- read_csv("data/metabarcoding_results.csv")
 View(metabarcoding_data)
 
 
-###----
-###----
+#----
+#----
 ### Cleaning the data ----
 meta <- metabarcoding_data %>% drop_na(Species)
 #remove na species
@@ -284,7 +284,7 @@ plot(richness_glm)
 
 #----
 #----
-### Plot Reads ----
+### Plot Read counts/summarise reads ----
 View(filtered_detections_summary)
 
 readnumber.plot<- ggplot(summary_table, aes(x = Duration, y = Mean_Read, color = Temperature,fill = Temperature, group = Temperature)) +
@@ -301,9 +301,9 @@ readnumber.plot
 boxplot(meta$Reads ~ meta$Duration)
 # seems like fewer reads in week 4
 
-### ----
-###----
-### Community analysis ----
+# ----
+#----
+### Creating community matrix ----
 # Select only the necessary columns
 meta_long<- meta %>%
   select(`Sample ID`, `Species`, `Total read`)
@@ -343,8 +343,8 @@ View(otu_ra)
 # bray curtis matrix of dissimilarity
 otu_dist<- vegdist(otu_wide, method="bray")
 summary(otu_dist)
-### ----
-### ----
+# ----
+# ----
 ### SAC trials ----
 install.packages("BiodiversityR")
 library(BiodiversityR)
@@ -377,8 +377,8 @@ sac_ambient<- specaccum(a_matrix, method = "random")
 method='exact', conditioned=FALSE, plotit=FALSE)
 
 
-###----
-###----
+#----
+#----
 ### PERMANOVA ----
 # need to remove rows that have all 0s
 meta_wide_clean <- meta_wide[rowSums(meta_wide) > 0, ]
@@ -400,11 +400,10 @@ otu_dist<- vegdist(otu_wide, method="bray")
 # do the PERMANOVA
 adonis2(meta_wide_clean ~ duration*temperature , data = treatments_clean, permutations = 9999)
 
-###----
-###----
-### Trying CCA ----
+#----
+#----
+### CCA with interaction term ----
 # make the otu wide into a matrix for the cca model
-
 meta_matrix<- as.matrix(meta_wide_clean)
 View(meta_matrix)
 
@@ -414,34 +413,70 @@ meta_hel <- decostand(meta_matrix, method = "hellinger")
 #make duration a factor (says to do so if you suspect that the relationship is not linear)
 treatments$Duration <- as.factor(treatments$Duration)
 
-cca_model <- cca(meta_hel ~ temperature + duration, data = treatments_clean)
+#create the cca model with the interaction
+cca_model_i <- cca(meta_hel ~ temperature* duration, data = treatments_clean)
 plot(cca_model)
-anova(cca_model, by = "term")  # tests each term: Temp, Time, and interaction
 
+#perform a permutational anova
+anova(cca_model_i, by = "term",  permutations = 9999)  # tests each term: Temp, Time, and interaction
+
+anova(cca_model_i)
 # another visualization
 plot(cca_model, display = c("sites", "species"))
 
-# assess VIF for colinearity, if greater than 10 suggests high collinearity
-vif.cca(cca_model)
-# 1.035 
+#----
+#----
+### CCA with interaction Model Diagnostics ----
+# assess VIF for collinearity, if greater than 10 suggests high collinearity
+vif.cca(cca_model_i)
 
-# model cca without interaction term
-cca_model_basic<- cca(otu_hell ~ Duration + Temperature, data = treatments)
-summary(cca_model_basic)
-anova(cca_model_basic)
+# adjusted r2 of the model
+RsquareAdj(cca_model_i)
+# 0.06211379
 
-#adjusted r2 for the two models:
-RsquareAdj(cca_model_basic)
-RsquareAdj(cca_model_interaction)
+goodness(cca_model_i, display = c("species", "sites"),
+         model = c("CCA", "CA"), summarize = FALSE, addprevious = FALSE)
+
+spenvcor(cca_model)
+#----
+#----
+### CCA without interaction term ----
+cca_model_b<- cca(meta_hel ~ temperature+ duration, data = treatments_clean)
+
+#perform a permutational anova
+anova(cca_model_b, by = "term",  permutations = 9999)  # tests each term: Temp, Time, and interaction
+
+anova(cca_model_b)
+# another visualization
+plot(cca_model_b, display = c("sites", "species"))
+#----
+#----
+### CCA without interaction Model Diagnostics ----
+# assess VIF for collinearity, if greater than 10 suggests high collinearity
+vif.cca(cca_model_b)
+
+# adjusted r2 of the model
+RsquareAdj(cca_model_b)
+# 0.01647461
+
+goodness(cca_model_b, display = c("species", "sites"),
+         model = c("CCA", "CA"), summarize = FALSE, addprevious = FALSE)
+
+spenvcor(cca_model)
 
 # does interaction term improve the model?
-anova(cca_model_basic, cca_model_interaction, by = "terms", permutations = 999)
+anova(cca_model_b, cca_model_i, by = "terms", permutations = 999)
 
 # do each of the models explain the variation in the data?:
-anova(cca_model_basic, permutations = 999)  # Test overall model without interaction
-anova(cca_model_interaction, permutations = 999)  # Test overall model with interaction
-### ----
-### ----
+anova(cca_model_b, permutations = 999)  # Test overall model without interaction
+anova(cca_model_i, permutations = 999)  # Test overall model with interaction
+# ----
+# ----
+### Plot the CCA ----
+
+#----
+#----
+
 ### Heat Maps ----
 # Select only the frozen samples
 frozen <- meta %>%
