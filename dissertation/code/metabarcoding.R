@@ -212,8 +212,8 @@ sp_rich <- sp_rich %>%
 
 #plot species richness
 meta_richness_plot<- ggplot(sp_rich, aes(x = duration, y = richness, color = Treatment,fill = Treatment, group = Treatment)) +
-  geom_smooth(method = "lm", formula = y ~ x + I(x^2))+ 
-  geom_point(data = sp_rich, shape = 21, position = position_jitterdodge(), size = 2.3) +
+  geom_smooth(method= glm, method.args = list(family = poisson(link = "log")), alpha = 0.2)+ 
+  geom_point(data = sp_rich, shape = 21,color = "black", stroke = 0.7, position = position_jitterdodge(), size = 2.0) +
   #geom_point(data = na_meta,
    #          aes(shape = `NA`, color = Treatment),
     #         position = position_jitterdodge(), size = 3.8) +  # X points
@@ -229,6 +229,7 @@ meta_richness_plot<- ggplot(sp_rich, aes(x = duration, y = richness, color = Tre
   theme_classic() +
   scale_shape_manual(values = c("No species detected" = 4)) +
   theme(text = element_text(size = 15))
+
 
 meta_richness_plot
 
@@ -280,7 +281,6 @@ drop1(richness_glm, test="Chisq")
 # not statistically significantly different to 
 
 plot(richness_glm)
-
 
 #----
 #----

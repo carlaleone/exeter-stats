@@ -148,10 +148,10 @@ na.conc$`Below Detection Limit` <- "< 0.5 ng/µL"
 
 conc.plot<- ggplot(conc, aes(x = duration, y = concentration, color = Treatment,fill = Treatment, group = Treatment)) +
   geom_smooth(method= glm, method.args = list(family = quasipoisson(link = "log")), alpha = 0.2) +
-  geom_point(data = conc) +
+  geom_point(data = conc, shape = 21,color = "black", stroke = 0.7, position = position_jitterdodge(), size = 2.0) +
   geom_point(data = na.conc,
              aes(shape = `Below Detection Limit`, color = Treatment),
-             position = position_jitterdodge(), size = 1.8) +  # X points
+             position = position_jitterdodge(), size = 4.5, stroke = 0.7) +  # X points
   scale_shape_manual(values = c("< 0.5 ng/µL" = 4)) +
   labs(
     x = "Time (Weeks of storage)",
