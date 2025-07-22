@@ -148,7 +148,7 @@ na.conc$`Below Detection Limit` <- "< 0.5 ng/µL"
 
 conc.plot<- ggplot(conc, aes(x = duration, y = concentration, color = Treatment,fill = Treatment, group = Treatment)) +
   geom_smooth(method= glm, method.args = list(family = quasipoisson(link = "log")), alpha = 0.2) +
-  geom_point(data = conc, shape = 21,color = "black", stroke = 0.7, position = position_jitterdodge(), size = 2.0) +
+  geom_point(data = conc, aes(fill = Treatment), shape = 21,color = "black", stroke = 0.7, position = position_jitterdodge(), size = 2) +
   geom_point(data = na.conc,
              aes(shape = `Below Detection Limit`, color = Treatment),
              position = position_jitterdodge(), size = 4.5, stroke = 0.7) +  # X points
@@ -163,7 +163,27 @@ scale_fill_paletteer_d("lisa::BridgetRiley") +
   theme_classic() +
   theme(text = element_text(size = 15))
 
+# trials
+conc.plot<- ggplot(conc, aes(x = duration, y = concentration, color = Treatment,fill = Treatment, group = Treatment)) +
+  geom_smooth(method= glm, method.args = list(family = quasipoisson(link = "log")), alpha = 0.2) +
+  geom_point(data = conc, shape = 21,color = "black", stroke = 0.7, position = position_jitterdodge(), size = 2.0) +
+  geom_point(data = na.conc,
+             aes(shape = `Below Detection Limit`, color = Treatment),
+             position = position_jitterdodge(), size = 4.5, stroke = 0.7) +  # X points
+  scale_shape_manual(values = c("< 0.5 ng/µL" = 4)) +
+  labs(
+    x = "Time (Weeks of storage)",
+    y = "Concentration (ng/µL)"
+  ) + # Use in a ggplot2 chart:
+  scale_colour_paletteer_d("lisa::BridgetRiley") +
+  scale_fill_paletteer_d("lisa::BridgetRiley") +
+  scale_x_continuous(breaks = c(0,1,2,3,4,5,6,7,8)) +
+  theme_classic() +
+  theme(text = element_text(size = 15))
+
 conc.plot 
+
+
 
 na.conc
 #----

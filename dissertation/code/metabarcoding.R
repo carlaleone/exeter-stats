@@ -73,10 +73,14 @@ summary_meta <- meta %>%
     Mean_Read = mean(`Total read`, na.rm = TRUE),
     SD_Read = sd(`Total read`, na.rm = TRUE),
     Total_Read = sum(`Total read`, na.rm = TRUE),
+    BP_length = sum(`Align Len`, na.rm = T),
     Count = n()
   )
 View(summary_meta)
+sd(full_meta$`Align Len`, na.rm = T)
 
+length(unique(full_meta$`Total read`))
+#18 total detections
 
 # summary of unfiltered results. 
 
