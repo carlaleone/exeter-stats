@@ -309,7 +309,7 @@ boxplot(meta$Reads ~ meta$Duration)
 #----
 ### Creating community matrix ----
 # Select only the necessary columns
-meta_long<- meta %>%
+meta_long<- full_meta %>%
   select(`Sample ID`, `Species`, `Total read`)
 View(meta_long)
 
@@ -327,7 +327,7 @@ View(meta_wide)
 # make sure sample ID is the row names not an actual row
 meta_wide<- meta_wide %>%
   column_to_rownames(var = "Sample ID")
-meta_wide_clean
+View(meta_wide_clean)
 
 #make another data frame with the different categories for each Sample ID
 treatments<- meta %>%
@@ -336,7 +336,7 @@ treatments
 
 # treatments including only the data that has actual results
 treatments_clean <- treatments %>%
-  filter(`Sample ID` %in% c("A0_2", "A0_4", "A1_1", "A4_2", "A4_3", "A4_4", "A8_1", "A8_2", "A8_4", "FR0_1", "FR2_1", "FR2_2", "FR8_4"))
+  filter(`Sample ID` %in% c("A0_2", "A0_4", "A1_1", "A4_2", "A4_3", "A4_4", "A8_1", "A8_2", "A8_4", "FR0_1", "FR2_1", "FR2_3", "FR8_4"))
 View(treatments_clean)
 
 # Making the matrix relative abundances because sequencing depth can be different for different samples
@@ -353,34 +353,119 @@ summary(otu_dist)
 install.packages("BiodiversityR")
 library(BiodiversityR)
 
+View(treatments_clean)
 # subset the matrix into each of the treatments
 #frozen
-samples_fr <- treatments$SampleID[treatments$Temperature == "Frozen"]
-frozen_matrix <- otu_wide[samples_fr, ]
+samples_fr <- treatments_clean$`Sample ID`[treatments_clean$temperature == "Frozen"]
+frozen_matrix <- meta_wide[samples_fr, ]
 #ambient
-samples_a <- treatments$SampleID[treatments$Temperature == "Ambient"]
-a_matrix <- otu_wide[samples_a, ]
+samples_a <- treatments_clean$`Sample ID`[treatments_clean$temperature == "Ambient"]
+a_matrix <- meta_wide[samples_a, ]
 #w0
-samples_0 <- treatments$SampleID[treatments$Duration == "0"]
-matrix_0 <- otu_wide[samples_0, ]
+samples_0 <- treatments_clean$duration[treatments_clean$duration == "0"]
+matrix_0 <- meta_wide[samples_0, ]
 #w1
-samples_1 <- treatments$SampleID[treatments$Duration == "1"]
-matrix_1 <- otu_wide[samples_1, ]
+samples_1 <- treatments_clean$duration[treatments_clean$duration == "1"]
+matrix_1 <- meta_wide[samples_1, ]
 #w2
-samples_2 <- treatments$SampleID[treatments$Duration == "2"]
-matrix_2 <- otu_wide[samples_2, ]
+samples_2 <- treatments_clean$duration[treatments_clean$duration == "2"]
+matrix_2 <- meta_wide[samples_2, ]
 #w4
-samples_4 <- treatments$SampleID[treatments$Duration == "4"]
-matrix_4 <- otu_wide[samples_4, ]
+samples_4 <- treatments_clean$duration[treatments_clean$duration == "4"]
+matrix_4 <- meta_wide[samples_4, ]
+#w8
+samples_8 <- treatments_clean$duration[treatments_clean$duration == "8"]
+matrix_8 <- meta_wide[samples_8, ]
 
 # then calculate the sac for each matrix subset
 sac_freezer <- specaccum(frozen_matrix, method = "random")
 sac_ambient<- specaccum(a_matrix, method = "random")
 
-#Accum.1 <- accumcomp(otu_wide, y=treatments, factor='SampleID', 
+plot(sac_freezer)
+
+Accum.1 <- accumcomp(meta_wide, y=treatments_clean, factor="temperature", 
 method='exact', conditioned=FALSE, plotit=FALSE)
 
+### Another SAC method to copy bizzozero manually ----
+treatments$read_counts <- rowSums(meta_wide)
+sac <- specaccum(meta_wide, method = "random")  # random permutations
+sac
+# Get the row sums (read counts per sample)
+read_counts <- rowSums(meta_wide)
+read_counts
+# Order samples by increasing read count
+ordered_samples <- order(read_counts)
 
+# Reorder your matrix
+meta_ordered <- meta_wide[ordered_samples, ]
+
+# Get cumulative read count
+cumulative_reads <- cumsum(read_counts[ordered_samples])
+
+View(cumulative_reads)
+
+#recreate the sp richness df with read number
+sp_rich_sac <- meta %>%
+  group_by(`Sample ID`, temperature, duration, `Total read`, Species) %>%
+  summarise(richness = n_distinct(Species,na.rm = TRUE)) %>%
+  ungroup()
+
+sp_rich_sac <- sp_rich_sac %>%
+  group_by(`Sample ID`) %>%
+  summarise(
+    Total_Reads = sum(`Total read`, na.rm = TRUE),
+    Richness = n_distinct(Species)
+  )
+
+View(sp_rich_sac)
+
+
+#add a column with cumulative reads
+sp_rich_sac <- sp_rich_sac %>%
+  arrange(Total_Reads) %>%
+  mutate(Cumulative_Reads = cumsum(Total_Reads))
+View(sp_rich_sac)
+
+ggplot(sp_rich_sac, aes(x = Cumulative_Reads, y = Richness)) +
+  geom_line() +
+  labs(x = "Cumulative Read Count", y = "Species Richness") +
+  theme_classic()
+
+
+
+overall_sac_plot<- ggplot(sac_df, aes(x = Sites, y = Richness)) +
+  geom_line(color = "blue", size = 1) +
+  geom_ribbon(aes(ymin = Richness - SD, ymax = Richness + SD),
+              fill = "blue", alpha = 0.2) +
+  labs(x = "Number of Samples", y = "Species Richness") +
+  theme_classic()
+
+
+
+ggplot(sac_data, aes(x = ReadCount, y = sp.richness, color = duration)) +
+  geom_line(aes(group = Sample.ID), alpha = 0.7) +
+  geom_text(aes(label = Sample.ID), hjust = -0.1, size = 2.5, show.legend = FALSE) +
+  facet_wrap(~temperature) +
+  labs(
+    x = "Read Counts",
+    y = "Species Richness",
+    color = "Treatment"
+  ) +
+  theme_classic() +
+  theme(text = element_text(size = 14))
+
+### SAC with accumcomp ----
+Accum.1 <- accumcomp(meta_wide, y=treatments, factor='temperature', 
+                     method='exact', conditioned=FALSE, plotit=FALSE)
+Accum.1
+accum.long1 <- accumcomp.long(Accum.1, ci=NA, label.freq=5)
+head(accum.long1)
+
+temp_sac_plot<- ggplot(data=accum.long1, aes(x = Sites, y = Richness, ymax = UPR, ymin = LWR)) + 
+  geom_line(aes(colour=Grouping), size=1.2) +
+  geom_ribbon(aes(colour=Grouping), alpha=0.2, show.legend=FALSE) + 
+  labs(x = "Samples", y = "Species Richness", colour = "Treatment", shape = "Treatment") +
+  theme_classic()
 #----
 #----
 ### PERMANOVA ----
