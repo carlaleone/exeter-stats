@@ -353,119 +353,80 @@ summary(otu_dist)
 install.packages("BiodiversityR")
 library(BiodiversityR)
 
-View(treatments_clean)
-# subset the matrix into each of the treatments
-#frozen
-samples_fr <- treatments_clean$`Sample ID`[treatments_clean$temperature == "Frozen"]
-frozen_matrix <- meta_wide[samples_fr, ]
-#ambient
-samples_a <- treatments_clean$`Sample ID`[treatments_clean$temperature == "Ambient"]
-a_matrix <- meta_wide[samples_a, ]
-#w0
-samples_0 <- treatments_clean$duration[treatments_clean$duration == "0"]
-matrix_0 <- meta_wide[samples_0, ]
-#w1
-samples_1 <- treatments_clean$duration[treatments_clean$duration == "1"]
-matrix_1 <- meta_wide[samples_1, ]
-#w2
-samples_2 <- treatments_clean$duration[treatments_clean$duration == "2"]
-matrix_2 <- meta_wide[samples_2, ]
-#w4
-samples_4 <- treatments_clean$duration[treatments_clean$duration == "4"]
-matrix_4 <- meta_wide[samples_4, ]
-#w8
-samples_8 <- treatments_clean$duration[treatments_clean$duration == "8"]
-matrix_8 <- meta_wide[samples_8, ]
-
-# then calculate the sac for each matrix subset
-sac_freezer <- specaccum(frozen_matrix, method = "random")
-sac_ambient<- specaccum(a_matrix, method = "random")
-
-plot(sac_freezer)
-
-Accum.1 <- accumcomp(meta_wide, y=treatments_clean, factor="temperature", 
-method='exact', conditioned=FALSE, plotit=FALSE)
-
-### Another SAC method to copy bizzozero manually ----
-treatments$read_counts <- rowSums(meta_wide)
-sac <- specaccum(meta_wide, method = "random")  # random permutations
-sac
-# Get the row sums (read counts per sample)
-read_counts <- rowSums(meta_wide)
-read_counts
-# Order samples by increasing read count
-ordered_samples <- order(read_counts)
-
-# Reorder your matrix
-meta_ordered <- meta_wide[ordered_samples, ]
-
-# Get cumulative read count
-cumulative_reads <- cumsum(read_counts[ordered_samples])
-
-View(cumulative_reads)
-
-#recreate the sp richness df with read number
-sp_rich_sac <- meta %>%
-  group_by(`Sample ID`, temperature, duration, `Total read`, Species) %>%
-  summarise(richness = n_distinct(Species,na.rm = TRUE)) %>%
-  ungroup()
-
-sp_rich_sac <- sp_rich_sac %>%
-  group_by(`Sample ID`) %>%
-  summarise(
-    Total_Reads = sum(`Total read`, na.rm = TRUE),
-    Richness = n_distinct(Species)
-  )
-
-View(sp_rich_sac)
-
-
-#add a column with cumulative reads
-sp_rich_sac <- sp_rich_sac %>%
-  arrange(Total_Reads) %>%
-  mutate(Cumulative_Reads = cumsum(Total_Reads))
-View(sp_rich_sac)
-
-ggplot(sp_rich_sac, aes(x = Cumulative_Reads, y = Richness)) +
-  geom_line() +
-  labs(x = "Cumulative Read Count", y = "Species Richness") +
-  theme_classic()
-
-
-
-overall_sac_plot<- ggplot(sac_df, aes(x = Sites, y = Richness)) +
-  geom_line(color = "blue", size = 1) +
-  geom_ribbon(aes(ymin = Richness - SD, ymax = Richness + SD),
-              fill = "blue", alpha = 0.2) +
-  labs(x = "Number of Samples", y = "Species Richness") +
-  theme_classic()
-
-
-
-ggplot(sac_data, aes(x = ReadCount, y = sp.richness, color = duration)) +
-  geom_line(aes(group = Sample.ID), alpha = 0.7) +
-  geom_text(aes(label = Sample.ID), hjust = -0.1, size = 2.5, show.legend = FALSE) +
-  facet_wrap(~temperature) +
-  labs(
-    x = "Read Counts",
-    y = "Species Richness",
-    color = "Treatment"
-  ) +
-  theme_classic() +
-  theme(text = element_text(size = 14))
-
 ### SAC with accumcomp ----
-Accum.1 <- accumcomp(meta_wide, y=treatments, factor='temperature', 
-                     method='exact', conditioned=FALSE, plotit=FALSE)
-Accum.1
-accum.long1 <- accumcomp.long(Accum.1, ci=NA, label.freq=5)
-head(accum.long1)
 
-temp_sac_plot<- ggplot(data=accum.long1, aes(x = Sites, y = Richness, ymax = UPR, ymin = LWR)) + 
+# make row names the first column for treatments, and make sure you have a column with read counts
+treatments_sac<- treatments %>%
+  column_to_rownames(var = "Sample ID")
+View(treatments_sac)
+
+View(meta_wide)
+
+
+# For the duration treatment
+Accum.dur <- accumcomp(meta_wide, y=treatments_sac, factor='duration', 
+                       method='exact', conditioned=FALSE, plotit=FALSE)
+
+accum.long.dur <- accumcomp.long(Accum.dur, ci=NA, label.freq=5)
+
+duration_sac_plot <- 
+  ggplot(data=accum.long.dur, aes(x = Sites, y = Richness, ymax = UPR, ymin = LWR)) + 
   geom_line(aes(colour=Grouping), size=1.2) +
-  geom_ribbon(aes(colour=Grouping), alpha=0.2, show.legend=FALSE) + 
-  labs(x = "Samples", y = "Species Richness", colour = "Treatment", shape = "Treatment") +
+  geom_ribbon(aes(colour=Grouping, fill=after_scale(alpha(colour, 0.2))), 
+              show.legend=FALSE) + 
+  labs(x = "Samples", y = "Species Richness", colour = "Duration", shape = "Duration") +
   theme_classic()
+
+duration_sac_plot
+
+
+# For the temperature treatment
+Accum.temp <- accumcomp(meta_wide, y=treatments_sac, factor='temperature', 
+                       method='exact', conditioned=FALSE, plotit=FALSE)
+
+accum.long.temp <- accumcomp.long(Accum.temp, ci=NA, label.freq=5)
+
+temp_sac_plot <- 
+  ggplot(data=accum.long.temp, aes(x = Sites, y = Richness, ymax = UPR, ymin = LWR)) + 
+  geom_line(aes(colour=Grouping), size=1.2) +
+  geom_ribbon(aes(colour=Grouping, fill=after_scale(alpha(colour, 0.2))), 
+              show.legend=FALSE) + 
+  labs(x = "Samples", y = "Species Richness", colour = "Duration", shape = "Duration") +
+  theme_classic()
+
+temp_sac_plot
+#----
+#----
+### SAC with accumcomp only FROZEN SAMPLES----
+#subset the data so that you have one for each temperature now creating fro meta frozen
+meta_frozen<- meta_wide
+meta_frozen$Sample.ID <- rownames(meta_frozen)
+meta_frozen <- meta_frozen[grepl('FR', meta_frozen$Sample.ID),]
+View(meta_frozen)
+meta_frozen <- subset(meta_frozen, select = -Sample.ID )
+
+#subset treatments frozen
+treatments_frozen<- treatments_sac
+treatments_frozen<- treatments_frozen[grepl('FR', treatments_frozen$Sample.ID),]
+View(treatments_frozen)
+
+#run accumcomp on meta wide using temp and the read counts as the scale
+Accum.FR <- accumcomp(meta_frozen, y=treatments_frozen, factor='duration',
+                     method='exact', conditioned=FALSE, plotit=FALSE)
+
+
+#long format
+accum.long.FR <- accumcomp.long(Accum.FR, ci=NA, label.freq=1)
+head(accum.long2)
+
+fr_sac_reads_plot<- ggplot(data=accum.long.FR, aes(x = Sites, y = Richness, ymax = UPR, ymin = LWR)) + 
+  geom_line(aes(colour=Grouping), size=1.2) +
+  geom_ribbon(aes(colour=Grouping, fill=after_scale(alpha(colour, alpha=0.3))), 
+              show.legend=FALSE) + 
+  labs(x = "Read Count", y = "Species", colour = "Duration", shape = "Duration") +
+  theme_classic()
+fr_sac_reads_plot
+
 #----
 #----
 ### PERMANOVA ----
