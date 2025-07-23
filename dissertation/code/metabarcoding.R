@@ -436,8 +436,14 @@ View(meta_wide_clean)
 
 # dont need to do tranformation before PERMANOVA because bray-curtis already calculate rel abundance...
 # but need to check for dispersion in groups:
-betadispersion <- betadisper(vegdist(meta_wide_clean, method = "bray"), treatments_clean$temperature)
-permutest(betadispersion)
+betadispersion.temp <- betadisper(vegdist(meta_wide_clean, method = "bray"), treatments_clean$temperature)
+permutest(betadispersion.temp)
+# there is a difference in dispersion between groups? p = 0.044 so almost unequal dispersion
+
+betadispersion.duration <- betadisper(vegdist(meta_wide_clean, method = "bray"), treatments_clean$duration)
+permutest(betadispersion.duration)
+
+
 anova(betadispersion)
 plot(betadispersion)
 
