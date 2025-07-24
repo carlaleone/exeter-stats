@@ -157,8 +157,10 @@ conc.plot<- ggplot(conc, aes(x = duration, y = concentration, color = Treatment,
     x = "Time (Weeks of storage)",
     y = "Concentration (ng/µL)"
   ) + # Use in a ggplot2 chart:
-  scale_colour_paletteer_d("lisa::BridgetRiley") +
-scale_fill_paletteer_d("lisa::BridgetRiley") +
+  scale_colour_manual(values = c("AMBIENT" = "#E69F00", "FREEZER" = "#0072B2")) +  # line color
+  scale_fill_manual(values = c("AMBIENT" = "#E69F00", "FREEZER" = "#0072B2")) +    # ribbon fill
+  #scale_colour_paletteer_d("lisa::BridgetRiley") +
+#scale_fill_paletteer_d("lisa::BridgetRiley") +
   scale_x_continuous(breaks = c(0,1,2,3,4,5,6,7,8)) +
   theme_classic() +
   theme(text = element_text(size = 15))
