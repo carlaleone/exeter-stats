@@ -410,6 +410,7 @@ anova(cca_model_i, permutations = 9999)  # Test overall model with interaction
 
 # Assume df_species contains only the species read counts
 hellinger_all <- decostand(meta_wide_clean, method = "hellinger")
+View(hellinger_all)
 
 # Step 2: Add metadata back (e.g., temperature, duration)
 hellinger_all$temperature <- treatments_clean$temperature
@@ -455,6 +456,7 @@ frozen_matrix<- as.matrix(frozen_wide)
 View(frozen_matrix)
 #hellinger transformation like bizzozzero
 fr_hel_matrix <- decostand(frozen_wide, method = "hellinger")
+View(fr_hel_matrix)
 ?decostand
 install.packages("pheatmap")
 library(pheatmap)
@@ -512,6 +514,7 @@ View(ambient_wide)
 
 #hellinger transformation like bizzozzero
 am_hel_matrix <- decostand(ambient_wide, method = "hellinger")
+
 ?decostand
 install.packages("pheatmap")
 library(pheatmap)
