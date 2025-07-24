@@ -5,7 +5,7 @@
 ### Load data and packages ----
 install.packages("pacman")
 library(pacman)
-pacman::p_load(stringr, tidyverse, readxl, patchwork, flextable, readr, vegan, BiodiversityR)
+pacman::p_load(stringr, tidyverse, readxl, patchwork, flextable, readr, vegan, BiodiversityR, RColorBrewer)
 getwd()
 setwd("/Users/carlaleone/Desktop/Exeter/dissertation")
 metabarcoding_data <- read_csv("data/metabarcoding_results.csv") 
@@ -404,49 +404,144 @@ anova(cca_model_i, permutations = 9999)  # Test overall model with interaction
 
 #----
 #----
-### Heat Map ----
+
+### Heat maps with total hellinger transformation? ---- 
+
+
+# Assume df_species contains only the species read counts
+hellinger_all <- decostand(meta_wide_clean, method = "hellinger")
+
+# Step 2: Add metadata back (e.g., temperature, duration)
+hellinger_all$temperature <- treatments_clean$temperature
+hellinger_all$duration <- treatments_clean$duration
+
+# Step 3: Split by temperature group
+hell_ambient <- hellinger_all[hellinger_all$temperature == "Ambient", ]
+hell_frozen  <- hellinger_all[hellinger_all$temperature == "Frozen",  ]
+
+View(hell_ambient)
+#----
+#----
+### Heat Map for frozen samples ----
+#using the hellinger transformation within the temperature group
 # Select only the frozen samples
-meta_frozen<- meta_wide
-meta_frozen$`Sample ID` <- rownames(meta_frozen)
-meta_frozen <- meta_frozen %>%
+meta_frozen<- meta_wide # copy meta wide
+meta_frozen$`Sample ID` <- rownames(meta_frozen) # extract the sample id column
+rownames(meta_frozen) <- NULL # remove current row names
+meta_frozen <- meta_frozen %>% #merge the treatments
   left_join(treatments, by = "Sample ID")
-meta_frozen <- meta_frozen[grepl('FR', meta_frozen$Sample.ID),]
-rownames(meta_frozen) <- NULL
+meta_frozen <- meta_frozen[grepl('FR', meta_frozen$Sample.ID),] #select only frozen treatments
 meta_frozen$duration<- as.factor(meta_frozen$duration)
 View(meta_frozen)
-non_species_cols <- c("Sample ID", "duration", "temperature", "Sample.ID", "read_counts")
+species_cols <- colnames(meta_frozen)[1:10]
 
 meta_frozen <- meta_frozen %>%
   group_by(duration) %>%
-  summarise(across(.cols = -all_of(non_species_cols), .fns = sum, na.rm = TRUE))
+  summarise(across(all_of(species_cols), sum, na.rm = TRUE))
 
-#frozen<- frozen %>%
-#mutate(detected = ifelse(Reads > 0, 1, 0)) %>%
-#  select(-Reads) #If you want to only have number of times detected rather than read number
-frozen
+View(meta_frozen)
 
 #make species the name column
 
 frozen_wide<- meta_frozen %>%
   column_to_rownames(var = "duration")
 
-# make it a matrix so its only numeric and the heatmap works
-frozen_matrix<- as.matrix(meta_frozen)
+#frozen_wide <- frozen_wide[, colSums(frozen_wide != 0, na.rm = TRUE) > 0]
 
+View(frozen_wide)
+
+# make it a matrix so its only numeric and the heatmap works
+frozen_matrix<- as.matrix(frozen_wide)
+View(frozen_matrix)
 #hellinger transformation like bizzozzero
-hellinger_matrix <- decostand(frozen_matrix, method = "hellinger")
+fr_hel_matrix <- decostand(frozen_wide, method = "hellinger")
 ?decostand
 install.packages("pheatmap")
 library(pheatmap)
 
-pheatmap(hellinger_matrix,
+fr_hel_matrix_t <- t(fr_hel_matrix) #transpose the matrix
+fr_hel_matrix_na <- fr_hel_matrix_t # create new matrix for the NAs
+fr_hel_matrix_na[fr_hel_matrix_na == 0] <- NA # record 0s as NAs
+my_colors_fr <- colorRampPalette(brewer.pal(9, "Blues"))(100) #select the colour ramp
+breaks <- seq(0, 1, length.out = 100)
+p_fr<- pheatmap(fr_hel_matrix_na,
+               cluster_rows = F,
+               cluster_cols =F,
+               breaks = breaks,
+               labels_row = rownames(fr_hel_matrix_na),
+               scale = "none",
+               color = my_colors,
+               na_col = "transparent",
+               show_rownames = F,
+               angle_col = 0,
+               legend = F,
+               main = "Frozen",
+               cellwidth = 30,    # width of each column
+               cellheight = 27)
+
+
+#----
+#----
+### Heat Map for ambient samples ----
+# Select only the frozen samples
+meta_ambient<- meta_wide # copy meta wide
+meta_ambient$`Sample ID` <- rownames(meta_ambient) # extract the sample id column
+rownames(meta_ambient) <- NULL # remove current row names
+meta_ambient <- meta_ambient %>% #merge the treatments
+  left_join(treatments, by = "Sample ID")
+meta_ambient <- meta_ambient[grepl('A', meta_ambient$Sample.ID),] #select only frozen treatments
+meta_ambient$duration<- as.factor(meta_ambient$duration)
+View(meta_ambient)
+species_cols <- colnames(meta_ambient)[1:10]
+
+meta_ambient <- meta_ambient %>%
+  group_by(duration) %>%
+  summarise(across(all_of(species_cols), sum, na.rm = TRUE))
+
+#make species the name column
+
+ambient_wide<- meta_ambient %>%
+  column_to_rownames(var = "duration")
+
+#ambient_wide <- ambient_wide[, colSums(ambient_wide != 0, na.rm = TRUE) > 0]
+
+View(ambient_wide)
+
+# make it a matrix so its only numeric and the heatmap works
+#ambient_matrix<- as.matrix(ambient_wide)
+
+#hellinger transformation like bizzozzero
+am_hel_matrix <- decostand(ambient_wide, method = "hellinger")
+?decostand
+install.packages("pheatmap")
+library(pheatmap)
+
+install.packages("RColorBrewer")
+library(RColorBrewer)
+
+am_hel_matrix_t <- t(am_hel_matrix) #transpose the matrix
+am_hel_matrix_na <- am_hel_matrix_t # create new matrix for the NAs
+am_hel_matrix_na[am_hel_matrix_na == 0] <- NA # record 0s as NAs
+my_colors <- colorRampPalette(brewer.pal(9, "Oranges"))(100) #select the colour ramp
+p_a<- pheatmap(am_hel_matrix_na,
          cluster_rows = F,
          cluster_cols = F,
+         breaks = breaks,
          scale = "none",
-         main = "Hellinger-transformed Heatmap")
+         color = my_colors,
+         na_col = "transparent", 
+         angle_col = 0,
+         main = "Ambient",
+         cellwidth = 30,    # width of each column
+         cellheight = 27)
 
-# basic heatmap
-heatmap(frozen_matrix,Colv = NA, Rowv = NA,  scale="column", xlab="Weeks in Storage")
+
+# save both maps together
+install.packages("gridExtra") 
+
+library(gridExtra)
+
+gridExtra::grid.arrange(p_fr$gtable, p_a$gtable, ncol = 2)
 
 
 #----
