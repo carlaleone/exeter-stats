@@ -208,7 +208,6 @@ sp_rich <- meta %>%
   summarise(richness = n_distinct(`Species`,na.rm = TRUE)) %>%
   ungroup()
 
-head(sp_rich)
 
 # ensure richness and duration are numeric
 sp_rich$duration<- as.numeric(sp_rich$duration)
@@ -292,7 +291,7 @@ meta_wide_clean <- meta_wide[rowSums(meta_wide) > 0, ]
 View(meta_wide_clean)
 
 #make another data frame with the different categories for each Sample ID
-treatments<- meta %>%
+treatments<- sp_rich %>%
   distinct(`Sample ID`, temperature, duration)
 treatments
 
@@ -308,7 +307,7 @@ View(treatments_clean)
 # but need to check for dispersion in groups:
 betadispersion.temp <- betadisper(vegdist(meta_wide_clean, method = "bray"), treatments_clean$temperature)
 permutest(betadispersion.temp)
-# there is a difference in dispersion between groups? p = 0.044 so almost unequal dispersion
+# there is a difference in dispersion between groups? p = 0.05 so almost unequal dispersion
 
 betadispersion.duration <- betadisper(vegdist(meta_wide_clean, method = "bray"), treatments_clean$duration)
 permutest(betadispersion.duration)
@@ -325,9 +324,8 @@ adonis2(meta_wide_clean ~ duration*temperature , data = treatments_clean, permut
 #----
 ### CCA with interaction term ----
 #create new treatments data frame with only data needed
-treatments_clean<- subset(treatments_clean, select = -Sample.ID)
-treatments_cca<- subset(treatments_clean, select = - read_counts)
-treatments_cca<- treatments_cca %>%
+View(treatments_clean)
+treatments_cca<- treatments_clean %>%
   column_to_rownames(var = "Sample ID")
 
 # make the otu wide into a matrix for the cca model
@@ -341,16 +339,11 @@ View(meta_hel)
 #create the cca model with the interaction
 cca_model_i <- cca(meta_hel ~ duration*temperature, data = treatments_cca)
 
-#colinearity- maybe make duration factor
-treatments_cca$duration<- as.factor(treatments_cca$duration)
-plot(cca_model)
 
 #perform a permutational anova
 anova(cca_model_i, by = "term",  permutations = 9999)  # tests each term: Temp, Time, and interaction
 
 anova(cca_model_i)
-# another visualization
-plot(cca_model, display = c("sites", "species"))
 
 #----
 #----
@@ -360,7 +353,7 @@ vif.cca(cca_model_i)
 
 # adjusted r2 of the model
 RsquareAdj(cca_model_i)
-#  0.03
+#  0.060
 
 goodness(cca_model_i, display = c("species", "sites"),
          model = c("CCA", "CA"), summarize = FALSE, addprevious = FALSE)
@@ -401,10 +394,85 @@ anova(cca_model_i, permutations = 9999)  # Test overall model with interaction
 # ----
 # ----
 ### Plot the CCA ----
+cca_model_i
+?cca
+scores.df<- as.data.frame(scores(cca_model_i, choices = c(1,2), display = "sites"))
+scores<- as.data.frame(scores(cca_model_i)) 
+scores.df
+scores.df$site <- rownames(scores.df)
+temps<- treatments_clean$temperature
+scores.df$temperature<- temps
 
+
+#next for the species:
+species.scores <- as.data.frame(scores(cca_model_i, choices = c(1,2), display = "species"))  #Using the scores function from vegan to extract the species scores and convert to a data.frame
+species.scores$species <- rownames(species.scores)  # create a column of species, from the rownames of species.scores
+head(species.scores)
+
+
+# to plot the hulls
+grp.f <- scores.df[scores.df$temperature == "Frozen", ][chull(scores.df[scores.df$temperature == 
+                                                                   "Frozen", c("CCA1", "CCA2")]), ]  # hull values for grp frozen
+grp.a <- scores.df[scores.df$temperature == "Ambient", ][chull(scores.df[scores.df$temperature == 
+                                                                   "Ambient", c("CCA1", "CCA2")]), ]  # hull values for grp ambient
+
+hull.data <- rbind(grp.f, grp.a)  #combine grp.a and grp.b
+hull.data
+
+ggplot() + 
+  geom_polygon(data=hull.data,aes(x=CCA1,y=CCA2,fill=temperature,group=temperature),alpha=0.30) + # add the convex hulls
+  geom_text(data=species.scores,aes(x=CCA1,y=CCA2,label=species),alpha=0.5) +  # add the species labels
+  geom_point(data=scores.df,aes(x=CCA1,y=CCA2,shape=temperature,colour=temperature),size=4) + # add the point markers
+  scale_colour_manual(values=c("Frozen" = "blue", "Ambient" = "red")) +
+  coord_equal() +
+  theme_bw() + 
+  theme(axis.text.x = element_blank(),  # remove x-axis text
+        axis.text.y = element_blank(), # remove y-axis text
+        axis.ticks = element_blank(),  # remove axis ticks
+        axis.title.x = element_text(size=18), # remove x-axis labels
+        axis.title.y = element_text(size=18), # remove y-axis labels
+        panel.background = element_blank(), 
+        panel.grid.major = element_blank(),  #remove major-grid labels
+        panel.grid.minor = element_blank(),  #remove minor-grid labels
+        plot.background = element_blank())
+
+
+
+ggplot() +
+  geom_polygon(data=hull.data,aes(x=CCA1,y=CCA2,fill=temperature,group=temperature),alpha=0.30) +# add the convex hulls
+  labs(fill = "temperature") +
+  # geom_text(data=species.scores,aes(x=NMDS1,y=NMDS2,label=species),size= 2, alpha=0.5) +  # add the species labels
+  geom_point(data=scores.df,aes(x=CCA1,y=CCA2,colour=temperature),size=3) + # add the point markers
+  geom_text(data=species.scores,aes(x=CCA1,y=CCA2,label = species),size=2,vjust=0) +  # add the site labels
+  #scale_colour_manual(values=Colours) +
+  #scale_fill_manual(values=Colours) +
+  # scale_x_continuous(limits = c(-1.4, 3), breaks = c(-1,0,1,2,3)) +
+  # scale_y_continuous(limits = c(-1.4, 1.2), breaks = c(-1,-0.5,0, 0.5 ,1)) +
+  scale_x_continuous(limits = c(-4, 1.5), breaks = c(-3,-2,-1, 0, 1)) +
+  scale_y_continuous(limits = c(-2, 2), breaks = c(-2,-1,0, 1,2)) +
+  #coord_equal() +
+  theme_classic() +
+  #ggtitle("Broadband Presence/Absence") +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.line = element_line(size = 1.5),  # increase axis line thickness
+        axis.title = element_text(size = 16),
+        axis.text = element_text(size = 14),
+        legend.text = element_text(size = 16),  # increase legend text size
+        legend.title = element_text(size = 18),
+        legend.background = element_rect(color = "grey", size = 0.5))+
+  # legend.position = "top")+
+  guides(colour = FALSE)
+) 
+
+ordihull(cca_model_i, # the nmds we created
+         groups= treatments_cca$temperature, #calling the groups from the mpa data frame we made
+         draw = "polygon", # drawing polygons
+         col = 1:2, # shading the plygons
+         label = FALSE #removing labels from the plygons
+) 
 #----
 #----
-
 ### Heat maps with total hellinger transformation? ---- 
 
 
@@ -631,6 +699,9 @@ fr_sac_reads_plot
 
 #----
 #----
+### Venn diagrams? ----
+# ----
+# ----
 ### Citations----
 install.packages("report")
 library(report)
