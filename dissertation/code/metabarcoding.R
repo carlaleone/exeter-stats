@@ -210,12 +210,11 @@ View(sp_rich)
 
 sp_rich$duration<- as.numeric(sp_rich$duration)
 sp_rich$richness<- as.numeric(sp_rich$richness)
-sp_rich <- sp_rich %>%
-  mutate(Treatment = toupper(temperature))
+sp_rich$Temperature <- sp_rich$temperature
 
 
 #plot species richness
-meta_richness_plot<- ggplot(sp_rich, aes(x = duration, y = richness, color = Treatment,fill = Treatment, group = Treatment)) +
+meta_richness_plot<- ggplot(sp_rich, aes(x = duration, y = richness, color = Temperature,fill = Temperature, group = Temperature)) +
   geom_smooth(method= glm, method.args = list(family = poisson(link = "log")), alpha = 0.2)+ 
   geom_point(data = sp_rich, shape = 21,color = "black", stroke = 0.7, position = position_jitterdodge(), size = 2.0) +
   #geom_point(data = na_meta,
@@ -226,8 +225,10 @@ meta_richness_plot<- ggplot(sp_rich, aes(x = duration, y = richness, color = Tre
     y = "Number of species detected",
    # shape = NULL
   ) + # Use in a ggplot2 chart:
-  scale_colour_paletteer_d("lisa::BridgetRiley") +
-  scale_fill_paletteer_d("lisa::BridgetRiley") +
+  scale_colour_manual(values = c("Ambient" = "#E69F00", "Frozen" = "#0072B2")) +  # line color
+  scale_fill_manual(values = c("Ambient" = "#E69F00", "Frozen" = "#0072B2")) +    # ribbon fill
+  #scale_colour_paletteer_d("lisa::BridgetRiley") +
+ # scale_fill_paletteer_d("lisa::BridgetRiley") +
   scale_x_continuous(breaks = c(0,1,2,3,4,5,6,7,8))+
   scale_y_continuous(breaks = c(0,1,2,3))+
   theme_classic() +
@@ -366,15 +367,17 @@ View(meta_wide)
 # For the duration treatment
 Accum.dur <- accumcomp(meta_wide, y=treatments_sac, factor='duration', 
                        method='exact', conditioned=FALSE, plotit=FALSE)
+?accumcomp
 
 accum.long.dur <- accumcomp.long(Accum.dur, ci=NA, label.freq=5)
 
 duration_sac_plot <- 
-  ggplot(data=accum.long.dur, aes(x = Sites, y = Richness, ymax = UPR, ymin = LWR)) + 
-  geom_line(aes(colour=Grouping), size=1.2) +
-  geom_ribbon(aes(colour=Grouping, fill=after_scale(alpha(colour, 0.2))), 
-              show.legend=FALSE) + 
-  labs(x = "Samples", y = "Species Richness", colour = "Duration", shape = "Duration") +
+  ggplot(data = accum.long.dur, aes(x = Sites, y = Richness)) + 
+  geom_ribbon(aes(ymin = LWR, ymax = UPR, fill = Grouping), alpha = 0.1, colour = NA) +
+  geom_line(aes(colour = Grouping), size = 0.8) +
+  scale_colour_manual(values = c("0" = "#E69F00", "1" = "#0072B2", "2" = "#009E73", "4" = "#D55E00", "8" = "#CC79A7")) +  # line color
+  scale_fill_manual(values = c("0" = "#E69F00", "1" = "#0072B2", "2" = "#009E73", "4" = "#D55E00", "8" = "#CC79A7")) +    # ribbon fill
+  labs(x = "Samples", y = "Species Richness", colour = "Duration", fill = "Duration") +
   theme_classic()
 
 duration_sac_plot
@@ -387,14 +390,18 @@ Accum.temp <- accumcomp(meta_wide, y=treatments_sac, factor='temperature',
 accum.long.temp <- accumcomp.long(Accum.temp, ci=NA, label.freq=5)
 
 temp_sac_plot <- 
-  ggplot(data=accum.long.temp, aes(x = Sites, y = Richness, ymax = UPR, ymin = LWR)) + 
-  geom_line(aes(colour=Grouping), size=1.2) +
-  geom_ribbon(aes(colour=Grouping, fill=after_scale(alpha(colour, 0.2))), 
-              show.legend=FALSE) + 
-  labs(x = "Samples", y = "Species Richness", colour = "Duration", shape = "Duration") +
+  ggplot(data = accum.long.temp, aes(x = Sites, y = Richness)) + 
+  geom_ribbon(aes(ymin = LWR, ymax = UPR, fill = Grouping), alpha = 0.1, colour = NA) +
+  geom_line(aes(colour = Grouping), size = 1.2) +
+  scale_colour_manual(values = c("Ambient" = "#E69F00", "Frozen" = "#0072B2")) +  # line color
+  scale_fill_manual(values = c("Ambient" = "#E69F00", "Frozen" = "#0072B2")) +    # ribbon fill
+  labs(x = "Samples", y = "Species Richness", colour = "Temperature", fill = "Temperature") +
   theme_classic()
 
 temp_sac_plot
+
+
+
 #----
 #----
 ### SAC with accumcomp only FROZEN SAMPLES----
