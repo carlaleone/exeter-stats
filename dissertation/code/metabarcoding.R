@@ -339,7 +339,8 @@ View(meta_hel)
 #create the cca model with the interaction
 cca_model_i <- cca(meta_hel ~ duration*temperature, data = treatments_cca)
 
-
+?cca
+?cca.object
 #perform a permutational anova
 anova(cca_model_i, by = "term",  permutations = 9999)  # tests each term: Temp, Time, and interaction
 
@@ -699,6 +700,39 @@ fr_sac_reads_plot
 
 #----
 #----
+### Testing ranacapa package ----
+library(devtools)
+install.packages("devtools")
+install.packages('phyloseq')
+library(phyloseq)
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+
+BiocManager::install("multtest")
+BiocManager::install("phyloseq")
+
+if (!requireNamespace("devtools", quietly = TRUE))
+  install.packages('devtools')
+
+
+devtools::install_github("gauravsk/ranacapa")
+library(ranacapa)
+ranacapa::runRanacapaApp()
+
+?convert_anacapa_to_phyloseq
+
+anacapra<- meta_wide_clean
+anacapra<- t(anacapra)
+anacapra<- as.data.frame(anacapra)
+View(anacapra)
+anacapra<- rownames_to_column(anacapra, "sum.taxonomy") 
+View(treatments_clean)
+ana.treat<- treatments_clean %>%
+  column_to_rownames(var = "Sample ID")
+ana.treat<- t(ana.treat)
+View(ana.treat)
+convert_anacapa_to_phyloseq(anacapra, ana.treat)
 ### Venn diagrams? ----
 # ----
 # ----
