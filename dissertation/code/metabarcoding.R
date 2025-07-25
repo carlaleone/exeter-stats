@@ -474,6 +474,109 @@ ordihull(cca_model_i, # the nmds we created
 ) 
 #----
 #----
+### Try plotting using eigenvalues----
+eig_vals <- eigenvals(cca_model_i)
+var_exp <- round(100 * eig_vals[1:2] / sum(eig_vals), 1)  # % variance on Axis 1 and 2
+
+
+scores.df.dur<- as.data.frame(scores(cca_model_i, choices = c(1,2), display = "sites"))
+scores.df
+scores.df$site <- rownames(scores.df)
+groups<- treatments_clean
+groups
+scores.df$temperature<- groups$temperature
+scores.df$duration<- as.factor(groups$duration)
+
+#next for the species:
+species.scores <- as.data.frame(scores(cca_model_i, choices = c(1,2), display = "species"))  #Using the scores function from vegan to extract the species scores and convert to a data.frame
+species.scores$species <- rownames(species.scores)  # create a column of species, from the rownames of species.scores
+head(species.scores)
+
+find_hull <- function(df) df[chull(df$CCA1, df$CCA2), ]
+
+hulls.duration <- scores.df %>% 
+  group_by(duration) %>% 
+  do(find_hull(.))
+
+install.packages("ggrepel") 
+library(ggrepel)
+
+duration.cca.plot<- ggplot(scores.df, aes(x = CCA1, y = CCA2, color = duration)) +
+  geom_point(size = 3) +
+  geom_polygon(data = hulls.duration, aes(fill = duration, group = duration), alpha = 0.3, color = NA) +
+  geom_point(data = species.scores, aes(x = CCA1, y = CCA2), 
+             shape = 17, color = "black", size = 3) +  # species points
+  geom_label_repel(
+    data = species.scores,
+    aes(x = CCA1, y = CCA2, label = species),
+    size = 3,
+    fill = alpha("white", 0.4),  # white background with 60% opacity
+    color = "black",
+    box.padding = 0.5,
+    point.padding = 0.3,
+    segment.color = "grey50",
+    max.overlaps = 100
+  ) +
+   labs(x = paste0("CCA1 (", var_exp[1], "%)"),
+       y = paste0("CCA2 (", var_exp[2], "%)"),
+       color = "Storage Duration (weeks)",
+       fill = "Storage Duration (weeks)") +
+  scale_colour_manual(values = c(
+    "0" = "#E69F00", "1" = "#0072B2", "2" = "#009E73", "4" = "#D55E00", "8" = "#CC79A7"
+  )) +
+  scale_fill_manual(values = c(
+    "0" = "#E69F00", "1" = "#0072B2", "2" = "#009E73", "4" = "#D55E00", "8" = "#CC79A7"
+  )) +
+  guides(
+    fill = guide_legend(override.aes = list(fill = NA))  # optional: remove polygon edge in legend
+  ) +
+  scale_x_continuous(breaks = seq(from = -3, to = 1, by = 0.5)) +
+  scale_y_continuous(breaks = seq(from = -2, to = 2, by = 0.5)) +
+  theme_classic()  
+  #theme(
+   # panel.grid.major = element_line(color = "grey80", size = 0.3) )
+
+
+
+#temperature cca plot
+
+
+hulls.temp <- scores.df %>% 
+  group_by(temperature) %>% 
+  do(find_hull(.))
+
+temp.cca.plot<- ggplot(scores.df, aes(x = CCA1, y = CCA2, color = temperature)) +
+  geom_point(size = 3) +
+  geom_polygon(data = hulls.temp, aes(fill = temperature, group = temperature), alpha = 0.3, color = NA) +
+  geom_point(data = species.scores, aes(x = CCA1, y = CCA2), 
+             shape = 17, color = "black", size = 3) +  # species points
+  geom_label_repel(
+    data = species.scores,
+    aes(x = CCA1, y = CCA2, label = species),
+    size = 3,
+    fill = alpha("white", 0.4),  # white background with 60% opacity
+    color = "black",
+    box.padding = 0.5,
+    point.padding = 0.3,
+    segment.color = "grey50",
+    max.overlaps = 100
+  ) +
+  labs(x = paste0("CCA1 (", var_exp[1], "%)"),
+       y = paste0("CCA2 (", var_exp[2], "%)"),
+       color = "Storage Temperature",
+       fill = "Storage Temperature") +
+  scale_colour_manual(values = c(
+    "Ambient" = "#E69F00", "Frozen" = "#0072B2" )) +
+  scale_fill_manual(values = c(
+    "Ambient" = "#E69F00", "Frozen" = "#0072B2" )) +
+  guides(
+    fill = guide_legend(override.aes = list(fill = NA))  # optional: remove polygon edge in legend
+  ) +
+  scale_x_continuous(breaks = seq(from = -3, to = 1, by = 0.5)) +
+  scale_y_continuous(breaks = seq(from = -2, to = 2, by = 0.5)) +
+  theme_classic()  
+
+temp.cca.plot
 ### Heat maps with total hellinger transformation? ---- 
 
 
@@ -720,19 +823,52 @@ devtools::install_github("gauravsk/ranacapa")
 library(ranacapa)
 ranacapa::runRanacapaApp()
 
-?convert_anacapa_to_phyloseq
+
 
 anacapra<- meta_wide_clean
 anacapra<- t(anacapra)
 anacapra<- as.data.frame(anacapra)
 View(anacapra)
-anacapra<- rownames_to_column(anacapra, "sum.taxonomy") 
+
+taxmat = matrix(sample(letters, 70, replace = TRUE), nrow = nrow(anacapra), ncol = 7)
+rownames(taxmat) <- rownames(anacapra)
+colnames(taxmat) <- c("Domain", "Phylum", "Class", "Order", "Family", "Genus", "Species")
+taxmat
+
+OTU = otu_table(anacapra, taxa_are_rows = TRUE)
+TAX = tax_table(taxmat)
+OTU
+physeq.object = phyloseq(OTU, TAX)
+sample_names(physeq.object)
+rownames(ana.treat)
+rownames(ana.treat) <- ana.treat$SampleID
+ana.treat$duration<- as.factor(ana.treat$duration)
+
+physeq.object
+sample_data(physeq.object) <- sample_data(ana.treat)
+
+ggrare(physeq.object, color = "temperature")
+
+
 View(treatments_clean)
 ana.treat<- treatments_clean %>%
   column_to_rownames(var = "Sample ID")
 ana.treat<- t(ana.treat)
+ana.treat<- as.data.frame(ana.treat)
+ana.treat$SampleID <- rownames(ana.treat)
 View(ana.treat)
-convert_anacapa_to_phyloseq(anacapra, ana.treat)
+rownames(ana.treat)<- NULL
+ana.treat$SampleID <- NULL
+ana.treat$SampleID<- as.character(ana.treat$SampleID)
+all(colnames(anacapra)[-1] %in% ana.treat$SampleID)
+
+rownames(ana.treat) <- paste0("ASV_", seq_len(nrow(anacapra)))
+
+tax_table(anacapra, errorIfNULL=TRUE)
+convert_anacapa_to_phyloseq(taxmat, ana.treat)
+
+?ggrare
+ggrare(physeq.object)
 ### Venn diagrams? ----
 # ----
 # ----
