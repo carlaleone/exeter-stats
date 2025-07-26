@@ -63,7 +63,7 @@ meta <- meta %>%
 
 #----
 #----
-### Exploring the number of reads ----
+### Exploring the number of reads and detections ----
 # summary table for the number of Reads
 summary_meta <- meta %>%
   group_by(duration, temperature) %>%
@@ -77,15 +77,61 @@ summary_meta <- meta %>%
 View(summary_meta)
 sd(full_meta$`Align Len`, na.rm = T)
 
+
+# how many reads from frozen samples?
+summary_frozen_reads<- summary_meta %>%
+  filter(temperature == "Frozen")
+View(summary_frozen_reads)
+sum(summary_frozen_reads$Total_Read)
+#587927
+
+# how many reads from ambient samples?
+summary_ambient_reads<- summary_meta %>%
+  filter(temperature == "Ambient")
+sum(summary_ambient_reads$Total_Read)
+#96438
+
+
+587927/684365 # percent of reads contributed by the frozen samples
+
+
+
 # how many species did we detect in total?
-unique(meta$Species)
+length(unique(meta$Species))
 # 10 unique species
+unique(meta$Species)
 
 # how many total detections?
-length(unique(full_meta$`Total read`))
+length(unique(meta$`Total read`))
 #18 total detections
 
 #13 samples had detections
+
+View(meta)
+# how many species detected for each temperature?
+
+#frozen samples subset of df
+meta_frozen_long<- meta %>%
+  filter(temperature == "Frozen")
+View(meta_frozen_long)
+unique(meta_frozen_long$Species)
+# 4 species detected from frozen samples
+
+length(unique(meta_frozen_long$`Total read`))
+# 5 total detectionsan
+
+# ambient samples subset of meta df
+meta_ambient_long<- meta %>%
+  filter(temperature == "Ambient")
+unique(meta_ambient_long$Species)
+# 10 species
+
+length(unique(meta_ambient_long$`Total read`))
+# 14 total detections 
+
+# percent of detections contributed by ambient samples
+14/18
+# 77.8% 
 
 # summary of unfiltered results. 
 summary_all_positive<- metabarcoding_data %>% drop_na(Species)
@@ -186,7 +232,7 @@ ggplot(data = meta, aes(x = factor(temperature), y = `Total read`, fill = temper
     y = "Read Count",
     fill = "Temperature"
   ) +
-  scale_fill_manual(values = c("Ambient" = "#F4ADA7", "Frozen" = "#76B451")) +
+  scale_fill_manual(values = c("Ambient" = "#E69F00", "Frozen" = "#0072B2")) +
   theme_classic() +
   theme(
     strip.text = element_text(size = 12, face = "bold"),
@@ -194,7 +240,6 @@ ggplot(data = meta, aes(x = factor(temperature), y = `Total read`, fill = temper
     text = element_text(size = 14),
     legend.position ="none"
   )
-
 
 
 #----
@@ -215,6 +260,7 @@ sp_rich$richness<- as.numeric(sp_rich$richness)
 # make temperature upper case: for plotting
 sp_rich$Temperature <- sp_rich$temperature
 
+View(sp_rich)
 #----
 #----
 ### Model species richness ----
@@ -300,6 +346,18 @@ treatments_clean <- treatments %>%
   filter(`Sample ID` %in% c("A0_2", "A0_4", "A1_1", "A4_2", "A4_3", "A4_4", "A8_1", "A8_2", "A8_4", "FR0_1", "FR2_1", "FR2_3", "FR8_4"))
 View(treatments_clean)
 
+
+View(meta_wide_clean)
+# number of detections per species 
+# Count how many samples had >0 reads per species
+detections_per_species <- colSums(meta_wide_clean > 0)
+View(detections_per_species)
+# Sort in descending order
+detections_sorted <- sort(detections_per_species, decreasing = TRUE)
+
+# View top detected species
+View(detections_sorted)
+detections_sorted
 # ----
 # ----
 ### PERMANOVA ----
@@ -394,7 +452,7 @@ anova(cca_model_b, permutations = 9999)  # Test overall model without interactio
 anova(cca_model_i, permutations = 9999)  # Test overall model with interaction
 # ----
 # ----
-### Plot the CCA ----
+### Plot the CCA using old code test ----
 cca_model_i
 ?cca
 scores.df<- as.data.frame(scores(cca_model_i, choices = c(1,2), display = "sites"))
@@ -475,7 +533,7 @@ ordihull(cca_model_i, # the nmds we created
 #----
 #----
 ### Try plotting using eigenvalues----
-eig_vals <- eigenvals(cca_model_i)
+eig_vals <- eigenvals(cca_model_i) # EIGENVALUEs are the variance explained by each canonical axis
 var_exp <- round(100 * eig_vals[1:2] / sum(eig_vals), 1)  # % variance on Axis 1 and 2
 
 
