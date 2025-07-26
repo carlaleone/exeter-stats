@@ -103,7 +103,7 @@ plot(conc.model4)
 # test the significance of the interaction term 
 anova(conc.model3, conc.model4, test = "F")
 # p = 0.006, F = 8.9462, df = 2, 21
-# having the interaction makes a significant difference -keep the interaction term.
+# having the interaction makes a significant difference -> keep the interaction term.
 
 #interaction effect
 drop1(conc.model4, test="F")

@@ -5,7 +5,7 @@
 ### Load data and packages ----
 install.packages("pacman")
 library(pacman)
-pacman::p_load(stringr, tidyverse, readxl, patchwork, flextable, readr, vegan, BiodiversityR, RColorBrewer)
+pacman::p_load(stringr, tidyverse, readxl, patchwork, flextable, readr, vegan, BiodiversityR, RColorBrewer, car)
 getwd()
 setwd("/Users/carlaleone/Desktop/Exeter/dissertation")
 metabarcoding_data <- read_csv("data/metabarcoding_results.csv") 
@@ -14,28 +14,29 @@ View(metabarcoding_data)
 #----
 #----
 ### Cleaning the data ----
-meta <- metabarcoding_data %>% drop_na(Species)
+meta1 <- metabarcoding_data %>% drop_na(Species)
 #remove na species
 
 
 # remove species that are not feasible or usable for the analysis
-meta <- meta %>%
+meta1 <- meta1 %>%
   filter(!Species %in% c("Homo sapiens", "Canis lupus", "Skip", "Bos primigenius", "Danio rerio"))
 
 
 # add samples that would have had no reads
 all_samples_B<- read_xlsx("data/all samples.xlsx") # with blanks
 all_samples<- all_samples_B %>%
-  filter(!`Sample ID` %in% c("B0", "B1", "B2", "B4", "B8"))
+  filter(!`Sample ID` %in% c("B0", "B1", "B2", "B4", "B8")) #remove blanks
+
 View(all_samples)
 
 #Join all samples and metabarcoding data into one data frame
 full_meta <- all_samples %>%
-  left_join(meta, by = "Sample ID")
+  left_join(meta1, by = "Sample ID")
 View(full_meta)
 
 
-data <- full_meta %>%
+meta2 <- full_meta %>%
   mutate(
     temperature = str_extract(`Sample ID`, "^[A-Z]+"),  # A, B, FR
     duration = as.numeric(str_remove_all(
@@ -44,11 +45,12 @@ data <- full_meta %>%
     )),
     replicate = str_extract(`Sample ID`, "(?<=_)\\d+")
   )
+# add the treatment groups and sample IDs 
 
 #create new columns for treatments
-View(data)
+View(meta2)
 
-meta <- data %>%
+meta <- meta2 %>%
   mutate(temperature = recode(temperature,
                             "A" = "Ambient",
                             "B" = "Blank",
@@ -64,7 +66,8 @@ meta <- meta %>%
 #----
 #----
 ### Exploring the number of reads and detections ----
-# summary table for the number of Reads
+
+# Summary table for the number of Reads, bp lenghts, for each treatment (10 rows total)
 summary_meta <- meta %>%
   group_by(duration, temperature) %>%
   summarize(
@@ -78,27 +81,43 @@ View(summary_meta)
 sd(full_meta$`Align Len`, na.rm = T)
 
 
-# how many reads from frozen samples?
+# Treatment level summary stats
+summary_meta_sd <-summary_meta %>%
+  filter(!Total_Read %in% c("0"))
+View(summary_meta_sd)
+# 7 of the 10 treatments had detections
+
+
+mean(summary_meta_sd$Total_Read)
+# 97766
+sd(summary_meta_sd$Total_Read)
+# 193611
+
+sd(summary_meta_sd$Total_Read)/(sqrt(7))
+# 73178 = the standard error of the mean across all treatment reads
+
+sum(summary_meta_sd$BP_length)/18
+
+# How many reads from frozen samples?
 summary_frozen_reads<- summary_meta %>%
   filter(temperature == "Frozen")
 View(summary_frozen_reads)
 sum(summary_frozen_reads$Total_Read)
 #587927
 
-# how many reads from ambient samples?
+# How many reads from ambient samples?
 summary_ambient_reads<- summary_meta %>%
   filter(temperature == "Ambient")
 sum(summary_ambient_reads$Total_Read)
 #96438
 
 
-587927/684365 # percent of reads contributed by the frozen samples
+(587927/684365)*100 # percent of reads contributed by the frozen samples
 
 
-
-# how many species did we detect in total?
+## How many species did we detect in total?
 length(unique(meta$Species))
-# 10 unique species
+# 10 unique species [remove the NA]
 unique(meta$Species)
 
 # how many total detections?
@@ -107,8 +126,8 @@ length(unique(meta$`Total read`))
 
 #13 samples had detections
 
-View(meta)
-# how many species detected for each temperature?
+
+## How many species detected for each temperature?
 
 #frozen samples subset of df
 meta_frozen_long<- meta %>%
@@ -133,7 +152,7 @@ length(unique(meta_ambient_long$`Total read`))
 14/18
 # 77.8% 
 
-# summary of unfiltered results. 
+## Summary of unfiltered results (including all blanks, controls, and extra species) 
 summary_all_positive<- metabarcoding_data %>% drop_na(Species)
 
 summary_all_positive<- summary_all_positive %>%
@@ -149,7 +168,7 @@ View(summary_all_positive)
 sum(summary_all_positive$Total_Read )
 #sum of all reads = 3,304,926
 
-# summary of filtered data
+## Summary of filtered data for each sample
 filtered_detections_summary<- meta %>%
   group_by(`Sample ID`) %>%
   summarize(
