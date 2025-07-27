@@ -389,14 +389,20 @@ permutest(betadispersion.temp)
 betadispersion.duration <- betadisper(vegdist(meta_wide_clean, method = "bray"), treatments_clean$duration)
 permutest(betadispersion.duration)
 
+#dispersion over both treatments
+treatments_clean$group <- interaction(treatments_clean$temperature, treatments_clean$duration, sep = "_")
+
+disp_interaction <- betadisper(vegdist(meta_wide_clean, method = "bray"), treatments_clean$group)
+
+permutest(disp_interaction)
 
 anova(betadispersion)
 plot(betadispersion)
 
 
 # do the PERMANOVA
-adonis2(meta_wide_clean ~ duration*temperature , data = treatments_clean, permutations = 9999)
-
+perm1<- adonis2(meta_wide_clean ~ duration+temperature , data = treatments_clean, permutations = 9999)
+perm1
 #----
 #----
 ### CCA with interaction term ----
