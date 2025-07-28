@@ -10,12 +10,9 @@ setwd("/Users/carlaleone/Desktop/Exeter/dissertation")
 #----
 #----
 ### Load and Clean the data ----
-conc<- read_excel('data/qubit_data.xls') %>%
-  dplyr:: select( - 'Qubit read concentration (ng/¬µL)') %>%
-  rename('duration'= 'EventID/duration', 'concentration' = 'Concentration (ng/¬µL)')
-  
-# remove the full NA rows
-conc<- conc[!is.na(conc$`Sample ID`), ]
+conc<- read_excel('data/new_qubit.xlsx')
+View(conc)
+
 
 # make concentration numeric to expose other NAs - expect warning of NAs introduced by coercion
 conc$concentration<- as.numeric(conc$concentration)
@@ -31,7 +28,7 @@ View(na.conc)
 
 #remove blanks from NA data 
 na.conc<- na.conc %>%
-  filter(Treatment != "Extraction Blank")
+  filter(treatment != "Blank")
 
 # remove NAs from the original data frame
 conc<- conc[!is.na(conc$concentration), ]
@@ -78,7 +75,8 @@ library(lme4)
 hist(conc$concentration)
 conc
 
-qubit.2$duration<- as.numeric(qubit.2$duration)
+conc$duration<- as.numeric(conc$duration)
+View(conc)
 
 conc.model1<- lm(log(concentration)~duration*Treatment, data = conc)
 summary(conc.model1)
@@ -92,11 +90,11 @@ summary(conc.model2)
 
 
 # glm with quasipoisson to mitigate overdispersion and without interaction
-conc.model3<- glm(concentration~ duration+Treatment, data= conc, family = quasipoisson (link = log))
+conc.model3<- glm(concentration~ duration + treatment, data= conc, family = quasipoisson (link = log))
 summary(conc.model3)
 
 # glm quasipoisson with interaction term
-conc.model4<- glm(concentration~ duration*Treatment, data= conc, family = quasipoisson (link = log))
+conc.model4<- glm(concentration~ duration*treatment, data= conc, family = quasipoisson (link = log))
 summary(conc.model4)
 plot(conc.model4)
 
