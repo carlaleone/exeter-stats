@@ -16,12 +16,12 @@ View(conc)
 
 # make concentration numeric to expose other NAs - expect warning of NAs introduced by coercion
 conc$concentration<- as.numeric(conc$concentration)
-conc
+View(conc)
 
 # create new data frame for NAs - can't be used in analysis because no known level of certainty
 na.conc<- conc %>% 
   filter(is.na(concentration)) %>%
-  mutate(concentration = 0.1) 
+  mutate(concentration = 0.01) 
 #yield give a pseudo number just for visualization = 0.1) #yield give a pseudo number just for visualization
 
 View(na.conc)
@@ -142,50 +142,24 @@ cooks_plot <- ggplot(data = data.frame(obs = 1:length(cooks), cooks = cooks), ae
 # ----
 ### Plot the GLM ----
 duo.colours<- palette.colors(2) 
-na.conc$`Below Detection Limit` <- "< 0.5 ng/µL"
+na.conc$`Below Detection Limit` <- "< 0.05 ng/µL"
 
-conc.plot<- ggplot(conc, aes(x = duration, y = concentration, color = Treatment,fill = Treatment, group = Treatment)) +
+conc.plot<- ggplot(conc, aes(x = duration, y = concentration, color = treatment,fill = treatment, group = treatment)) +
   geom_smooth(method= glm, method.args = list(family = quasipoisson(link = "log")), alpha = 0.2) +
-  geom_point(data = conc, aes(fill = Treatment), shape = 21,color = "black", stroke = 0.7, position = position_jitterdodge(), size = 2) +
+  geom_point(data = conc, aes(fill = treatment), shape = 21,color = "black", stroke = 0.7, position = position_jitterdodge(), size = 2) +
   geom_point(data = na.conc,
-             aes(shape = `Below Detection Limit`, color = Treatment),
+             aes(shape = `Below Detection Limit`, color = treatment),
              position = position_jitterdodge(), size = 4.5, stroke = 0.7) +  # X points
-  scale_shape_manual(values = c("< 0.5 ng/µL" = 4)) +
+  scale_shape_manual(values = c("< 0.05 ng/µL" = 4)) +
   labs(
     x = "Time (Weeks of storage)",
     y = "Concentration (ng/µL)"
   ) + # Use in a ggplot2 chart:
-  scale_colour_manual(values = c("AMBIENT" = "#E69F00", "FREEZER" = "#0072B2")) +  # line color
-  scale_fill_manual(values = c("AMBIENT" = "#E69F00", "FREEZER" = "#0072B2")) +    # ribbon fill
-  #scale_colour_paletteer_d("lisa::BridgetRiley") +
-#scale_fill_paletteer_d("lisa::BridgetRiley") +
-  scale_x_continuous(breaks = c(0,1,2,3,4,5,6,7,8)) +
+  scale_colour_manual(name = "Treatment", values = c("Ambient" = "#E69F00", "Frozen" = "#0072B2")) + 
+  scale_fill_manual(name = "Treatment", values = c("Ambient" = "#E69F00", "Frozen" = "#0072B2")) +    
   theme_classic() +
   theme(text = element_text(size = 15))
-
-# trials
-conc.plot<- ggplot(conc, aes(x = duration, y = concentration, color = Treatment,fill = Treatment, group = Treatment)) +
-  geom_smooth(method= glm, method.args = list(family = quasipoisson(link = "log")), alpha = 0.2) +
-  geom_point(data = conc, shape = 21,color = "black", stroke = 0.7, position = position_jitterdodge(), size = 2.0) +
-  geom_point(data = na.conc,
-             aes(shape = `Below Detection Limit`, color = Treatment),
-             position = position_jitterdodge(), size = 4.5, stroke = 0.7) +  # X points
-  scale_shape_manual(values = c("< 0.5 ng/µL" = 4)) +
-  labs(
-    x = "Time (Weeks of storage)",
-    y = "Concentration (ng/µL)"
-  ) + # Use in a ggplot2 chart:
-  scale_colour_paletteer_d("lisa::BridgetRiley") +
-  scale_fill_paletteer_d("lisa::BridgetRiley") +
-  scale_x_continuous(breaks = c(0,1,2,3,4,5,6,7,8)) +
-  theme_classic() +
-  theme(text = element_text(size = 15))
-
-conc.plot 
-
-
-
-na.conc
+conc.plot
 #----
 #----
 ### Checking extra models ----
