@@ -75,9 +75,11 @@ library(lme4)
 hist(conc$concentration)
 conc
 
+#make sure duration is numeric
 conc$duration<- as.numeric(conc$duration)
 View(conc)
 
+# Start with linear model and check fit.
 conc.model1<- lm(log(concentration)~duration*Treatment, data = conc)
 summary(conc.model1)
 plot(conc.model1)
@@ -86,10 +88,10 @@ plot(conc.model1)
 # glm with poisson because right skew
 conc.model2<- glm(concentration~ duration*Treatment, data= conc, family = poisson (link = log))
 summary(conc.model2)
-# overdispersed
+# overdispersed - dispersion = 1.88 which is greater that 1.5
 
 
-# glm with quasipoisson to mitigate overdispersion and without interaction
+# glm with quasipoisson to mitigate overdispersion and without interaction (simple model)
 conc.model3<- glm(concentration~ duration + treatment, data= conc, family = quasipoisson (link = log))
 summary(conc.model3)
 
@@ -142,6 +144,7 @@ cooks_plot <- ggplot(data = data.frame(obs = 1:length(cooks), cooks = cooks), ae
 # ----
 ### Plot the GLM ----
 duo.colours<- palette.colors(2) 
+# give NA conc a character so it can be plotted 
 na.conc$`Below Detection Limit` <- "< 0.05 ng/µL"
 
 conc.plot<- ggplot(conc, aes(x = duration, y = concentration, color = treatment,fill = treatment, group = treatment)) +

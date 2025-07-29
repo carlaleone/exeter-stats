@@ -389,6 +389,14 @@ permutest(betadispersion.temp)
 betadispersion.duration <- betadisper(vegdist(meta_wide_clean, method = "bray"), treatments_clean$duration)
 permutest(betadispersion.duration)
 
+treatments_clean$Group <- interaction(treatments_clean$temperature, treatments_clean$duration) 
+view(treatments_clean)
+dist <- vegdist(meta_wide_clean, method = "bray") 
+disp <- betadisper(dist, treatments_clean$Group) 
+anova(disp)
+permutest(disp)
+
+
 #dispersion over both treatments
 treatments_clean$group <- interaction(treatments_clean$temperature, treatments_clean$duration, sep = "_")
 
@@ -401,8 +409,23 @@ plot(betadispersion)
 
 
 # do the PERMANOVA
-perm1<- adonis2(meta_wide_clean ~ duration+temperature , data = treatments_clean, permutations = 9999)
-perm1
+
+
+perm.i<- adonis2(meta_wide_clean ~ duration*temperature , data = treatments_clean, permutations = 999, by = "margin")
+perm.i
+
+perm.b<- adonis2(meta_wide_clean ~ duration+temperature , data = treatments_clean, permutations = 999)
+perm.b
+
+View(treatments_clean)
+head(treatments_clean)
+
+perm.full <- adonis2(meta_wide_clean ~ temperature + duration + temperature:duration, 
+                     data = treatments_clean, 
+                     permutations = 999, 
+                     by = "margin")
+perm.full
+
 #----
 #----
 ### CCA with interaction term ----
@@ -449,7 +472,7 @@ spenvcor(cca_model_i)
 cca_model_b<- cca(meta_hel ~ duration + temperature, data = treatments_cca)
 
 #perform a permutational anova
-anova(cca_model_b, by = "term",  permutations = 9999)  # tests each term: Temp, Time, and interaction
+anova(cca_model_b, by = "term",  permutations = 999)  # tests each term: Temp, Time, and interaction
 
 anova(cca_model_b)
 # another visualization
@@ -462,7 +485,7 @@ vif.cca(cca_model_b)
 
 # adjusted r2 of the model
 RsquareAdj(cca_model_b)
-# -0.01747461 so model is worse than a null fit
+#  0.18258
 
 goodness(cca_model_b, display = c("species", "sites"),
          model = c("CCA", "CA"), summarize = FALSE, addprevious = FALSE)
@@ -817,6 +840,10 @@ View(meta_wide)
 # For the duration treatment
 Accum.dur <- accumcomp(meta_wide, y=treatments_sac, factor='duration', 
                        method='exact', conditioned=FALSE, plotit=FALSE)
+
+accum_overall <- specaccum(meta_wide, method = "random", permutations = 100)
+plot(accum_overall)
+
 ?accumcomp
 
 accum.long.dur <- accumcomp.long(Accum.dur, ci=NA, label.freq=5)
