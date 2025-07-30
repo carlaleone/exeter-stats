@@ -10,3 +10,7 @@ This folder contains the lab procedures that were used for DNA extractions and Q
 ### Qubit Assays
 - Protocol for Qubit Assays to get DNA Yield results was used from procedures outlined in [this pdf](https://github.com/carlaleone/exeter-stats/blob/main/dissertation/laboratory%20procedures/QubitProtocol_Kressler2025.pdf)
 - Qubit dsDNA HS was used, as our samples have very low concentrations of DNA, requiring high sensitivity. 
+
+
+### PCR and Sequencing
+- All samples were sent to Exeter Sequencing for PCR and sequencing with the MiFish U/E Primers. The protocl used by Exeter sequencing can be found in [this spreadsheet](https://github.com/carlaleone/exeter-stats/blob/main/dissertation/laboratory%20procedures/SeqMethodChecklist_11738___11569_MiFish_SOP_Joint_-_bW___GM_plate1_16_06_2025.xlsx)
