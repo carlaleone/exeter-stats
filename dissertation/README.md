@@ -2,7 +2,9 @@
 # Carla Leone MSc Dissertation Folder
 ### Dissertation Question:
 
-What is the effect of storage time and temperature on shark and fish detection using a novel eDNA sampler?
+*The effect of storage duration and temperature on the detection of sharks and fish using a novel passive eDNA sampler, the ‘Metaprobe’*
+
+Supervised by Dr. Molly Kressler
 
 ### Folders:
 - [data](https://github.com/carlaleone/exeter-stats/tree/main/dissertation/data): contains the [DNA Yield data](https://github.com/carlaleone/exeter-stats/blob/main/dissertation/data/qubit_data.xls) from Qubit assays and the [metabarcoding data](https://github.com/carlaleone/exeter-stats/blob/main/dissertation/data/metabarcoding_results.csv).
