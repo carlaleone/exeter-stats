@@ -4,7 +4,7 @@ This folder contains the lab procedures that were used for DNA extractions and Q
 ### Extractions
 - Protocol follows procedures outlined by [Maiello et al. Little samplers, big fleet: eDNA metabarcoding from commercial trawlers enhances ocean monitoring 2022. Fisheries Research](https://www.sciencedirect.com/science/article/pii/S0165783622000364). And as used in Kressler, Whitelegg et al. In Review. Environmental DNA.
 - Some slight modifications were made according to the steps used for this research, and the full updated protocol can be found in [this pdf](https://github.com/carlaleone/exeter-stats/blob/main/dissertation/laboratory%20procedures/Gauze_filter_DNAextraction_2025_LeoneEdits.pdf).
-- The buffers and reagents used in this extraction are all from the [Qiagen DNeasy Blood and Tissue Kit](file:///Users/carlaleone/Downloads/HB-2061-004_HB_DNY_Blood_Tissue_0623_WW.pdf). 
+- The buffers and reagents used in this extraction are all from the [Qiagen DNeasy Blood and Tissue Kit](https://www.qiagen.com/us/products/discovery-and-translational-research/dna-rna-purification/dna-purification/genomic-dna/dneasy-blood-and-tissue-kit). 
 
 
 ### Qubit Assays
