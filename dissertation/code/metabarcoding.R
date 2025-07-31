@@ -287,12 +287,16 @@ hist(sp_rich$richness)
 richness_glm<- glm(richness~ duration + temperature, data= sp_rich, family = poisson (link = log))
 summary(richness_glm)
 
+
+richness_i<- glm(richness~ duration* temperature, data= sp_rich, family = poisson (link = log))
+summary(richness_i)
 35.455/37
 # dispersion parameter
 
 richness_simple<- glm(richness~ duration, data= sp_rich, family = poisson (link = log))
 summary(richness_glm)
 anova(richness_simple, richness_glm,  test="Chisq")
+anova(richness_glm, richness_i,  test="Chisq")
 anova(richness_glm)
 anova(richness_simple)
 
