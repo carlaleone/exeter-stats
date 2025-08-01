@@ -5,7 +5,7 @@
 ### Load data and packages ----
 install.packages("pacman")
 library(pacman)
-pacman::p_load(stringr, tidyverse, readxl, patchwork, flextable, readr, vegan, BiodiversityR, RColorBrewer, car)
+pacman::p_load(stringr, tidyverse, readxl, readr, vegan, BiodiversityR, RColorBrewer, car)
 getwd()
 setwd("/Users/carlaleone/Desktop/Exeter/dissertation")
 metabarcoding_data <- read_csv("data/metabarcoding_results.csv") 
