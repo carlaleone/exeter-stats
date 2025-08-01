@@ -5,7 +5,7 @@
 ### Load data and packages ----
 install.packages("pacman")
 library(pacman)
-pacman::p_load(stringr, tidyverse, readxl, readr, vegan, BiodiversityR, RColorBrewer, car)
+pacman::p_load(stringr, tidyverse, readxl, readr, vegan, BiodiversityR, RColorBrewer, car, pheatmap)
 getwd()
 setwd("/Users/carlaleone/Desktop/Exeter/dissertation")
 metabarcoding_data <- read_csv("data/metabarcoding_results.csv") 
@@ -49,6 +49,7 @@ meta2 <- full_meta %>%
 
 #create new columns for treatments
 View(meta2)
+meta<-meta2
 
 meta <- meta2 %>%
   mutate(temperature = recode(temperature,
@@ -286,7 +287,7 @@ View(sp_rich)
 hist(sp_rich$richness)
 richness_glm<- glm(richness~ duration + temperature, data= sp_rich, family = poisson (link = log))
 summary(richness_glm)
-
+plot(richness_glm)
 
 richness_i<- glm(richness~ duration* temperature, data= sp_rich, family = poisson (link = log))
 summary(richness_i)

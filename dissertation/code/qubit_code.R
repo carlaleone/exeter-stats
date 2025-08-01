@@ -100,6 +100,8 @@ conc.model4<- glm(concentration~ duration*treatment, data= conc, family = quasip
 summary(conc.model4)
 plot(conc.model4)
 
+
+
 # test the significance of the interaction term 
 anova(conc.model3, conc.model4, test = "F")
 # p = 0.006, F = 8.9462, df = 2, 21
