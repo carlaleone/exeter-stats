@@ -4,7 +4,6 @@
 
 ### Tring OSM Data ----
 library(pacman)
-pacman::p_load(osmdata, sf, terra, marmap)
 
 
 bbox <- as.numeric(st_bbox(c(xmin = -5.2233, xmax = -4.8556, ymax = 50.2340, ymin = 50.0931), crs = st_crs(3857)))
