@@ -690,7 +690,11 @@ duration.cca.plot<- ggplot(scores.df, aes(x = CCA1, y = CCA2, color = duration))
   scale_x_continuous(breaks = seq(from = -3, to = 1, by = 0.5)) +
   scale_y_continuous(breaks = seq(from = -2, to = 2, by = 0.5)) +
   theme_classic() +
-  theme(legend.position = "bottom")
+  theme(axis.title = element_text(size = 18),   # axis titles
+        axis.text = element_text(size = 15),    # axis numbers
+        legend.title = element_text(size = 16), # legend title
+        legend.text = element_text(size = 14),
+        legend.position = "bottom")
 
 duration.cca.plot
 
@@ -720,10 +724,10 @@ hulls.temp <- scores.df %>%
   do(find_hull(.))
 
 temp.cca.plot<- ggplot(scores.df, aes(x = CCA1, y = CCA2, color = temperature)) +
-  geom_point(size = 3) +
+  geom_point(size = 4) +
   geom_polygon(data = hulls.temp, aes(fill = temperature, group = temperature), alpha = 0.3, color = NA) +
   geom_point(data = species.scores, aes(x = CCA1, y = CCA2), 
-             shape = 17, color = "black", size = 3) +  # species points
+             shape = 17, color = "black", size = 4) +  # species points
   labs(x = paste0("CCA1 (", var_exp[1], "%)"),
        y = paste0("CCA2 (", var_exp[2], "%)"),
        color = "Storage Temperature",
@@ -738,7 +742,11 @@ temp.cca.plot<- ggplot(scores.df, aes(x = CCA1, y = CCA2, color = temperature)) 
   scale_x_continuous(breaks = seq(from = -3, to = 1, by = 0.5)) +
   scale_y_continuous(breaks = seq(from = -2, to = 2, by = 0.5)) +
   theme_classic()  +
-  theme(legend.position = "bottom")
+  theme(axis.title = element_text(size = 18),   # axis titles
+        axis.text = element_text(size = 15),    # axis numbers
+        legend.title = element_text(size = 16), # legend title
+        legend.text = element_text(size = 14),
+        legend.position = "bottom")
 
 temp.cca.plot
 ### Heat maps with total hellinger transformation? ---- 
