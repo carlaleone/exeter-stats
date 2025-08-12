@@ -49,20 +49,14 @@ meta2 <- full_meta %>%
 
 #create new columns for treatments
 View(meta2)
-meta<-meta2
 
 meta <- meta2 %>%
-  mutate(temperature = recode(temperature,
+  mutate(temperature = dplyr::recode(temperature,
                             "A" = "Ambient",
-                            "B" = "Blank",
-                            "FR" = "Frozen",
-                            "P" = "P"))
+                            "FR" = "Frozen"))
 
 View(meta)
 
-# remove the blank because it had a detection, but that detection was for week 1 and no other week 1 sample had that detection.
-meta <- meta %>%
-  filter(!temperature %in% c("Blank"))
 
 #----
 #----
@@ -421,6 +415,16 @@ perm.i
 
 perm.b<- adonis2(meta_wide_clean ~ duration+temperature , data = treatments_clean, permutations = 999)
 perm.b
+
+?ordiR2step
+install.packages("AICcPermanova")
+library(AICcPermanova)
+AICc_permanova2(perm.i)
+AICc_permanova2(perm.b)
+
+# Step 3: Compute model-averaged adjusted R2
+adj_R2_summary <- akaike_adjusted_rsq(model_table)
+print(adj_R2_summary)
 
 View(treatments_clean)
 head(treatments_clean)

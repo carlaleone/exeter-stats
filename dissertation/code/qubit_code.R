@@ -21,7 +21,7 @@ View(conc)
 # create new data frame for NAs - can't be used in analysis because no known level of certainty
 na.conc<- conc %>% 
   filter(is.na(concentration)) %>%
-  mutate(concentration = 0.01) 
+  mutate(concentration = -0.01) 
 #yield give a pseudo number just for visualization = 0.1) #yield give a pseudo number just for visualization
 
 View(na.conc)
@@ -77,6 +77,7 @@ conc
 
 #make sure duration is numeric
 conc$duration<- as.numeric(conc$duration)
+
 View(conc)
 
 # Start with linear model and check fit.
@@ -165,6 +166,70 @@ conc.plot<- ggplot(conc, aes(x = duration, y = concentration, color = treatment,
   theme_classic() +
   theme(text = element_text(size = 15))
 conc.plot
+#----
+#----
+# PLOT WITH MOLLY SUGGESTIONS ----
+
+predict.data <- expand.grid(
+  duration = seq(min(conc$duration), max(conc$duration), length.out = 100),
+  treatment = unique(conc$treatment)
+)
+
+View(newdat)
+
+
+# predict based on the glm quasi poisson model
+pred <- predict(conc.model4, newdat, type = "link", se.fit = TRUE)
+head(pred)
+
+#calculate the confidence intervals (still on the log scale)
+lwr = pred$fit - 1.96 * pred$se.fit
+upr = pred$fit + 1.96 * pred$se.fit
+
+# backtransform to the original scale for plotting
+predict.data$fit    <- exp(pred$fit)                         
+predict.data$lwr    <- exp(lwr)
+predict.data$upr    <- exp(upr)
+
+
+# make sure duration is numeric before plotting
+na.conc$duration<- as.numeric(na.conc$duration)
+View(na.conc)
+
+
+# make the plot
+ggplot(conc, aes(x = duration, y = concentration, color = treatment, fill = treatment)) +
+  # Ribbon for 95% CI
+  geom_ribbon(
+    data = predict.data,
+    aes(x = duration, ymin = lwr, ymax = upr, fill = treatment),
+    alpha = 0.2,
+    inherit.aes = FALSE) +
+  geom_line(
+    data = predict.data,
+    aes(x = duration, y = fit, color = treatment),
+    size = 1,
+    inherit.aes = FALSE) +
+  geom_point(
+    data = conc,
+    aes(fill = treatment),
+    shape = 21, stroke = 0.7,
+    position = position_jitterdodge(), size = 2) +
+  geom_point(data = na.conc,
+             aes(shape = `Below Detection Limit`, color = treatment),
+             position = position_jitterdodge(), size = 4.5, stroke = 0.7) +  
+  scale_shape_manual(values = c("< 0.05 ng/µL" = 4)) +
+  labs(
+    x = "Duration (Weeks)",
+    y = "Concentration (ng/µL)"
+  ) +
+  scale_colour_manual(values = c("Ambient" = "#E69F00", "Frozen" = "#0072B2")) + 
+  scale_fill_manual(values = c("Ambient" = "#E69F00", "Frozen" = "#0072B2")) +    
+  theme_classic() +
+  theme(text = element_text(size = 15),
+        legend.position = "none") +
+  scale_x_continuous(breaks = 0:8)
+
 #----
 #----
 ### Checking extra models ----
