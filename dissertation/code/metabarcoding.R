@@ -647,7 +647,7 @@ eig_vals <- eigenvals(cca_model_i) # EIGENVALUEs are the variance explained by e
 var_exp <- round(100 * eig_vals[1:2] / sum(eig_vals), 1)  # % variance on Axis 1 and 2
 
 
-scores.df.dur<- as.data.frame(scores(cca_model_i, choices = c(1,2), display = "sites"))
+scores.df<- as.data.frame(scores(cca_model_i, choices = c(1,2), display = "sites"))
 scores.df
 scores.df$site <- rownames(scores.df)
 groups<- treatments_clean
@@ -674,41 +674,47 @@ duration.cca.plot<- ggplot(scores.df, aes(x = CCA1, y = CCA2, color = duration))
   geom_polygon(data = hulls.duration, aes(fill = duration, group = duration), alpha = 0.3, color = NA) +
   geom_point(data = species.scores, aes(x = CCA1, y = CCA2), 
              shape = 17, color = "black", size = 3) +  # species points
-  geom_label_repel(
-    data = species.scores,
-    aes(x = CCA1, y = CCA2, label = species),
-    size = 3,
-    fill = alpha("white", 0.4),  # white background with 60% opacity
-    color = "black",
-    box.padding = 0.5,
-    point.padding = 0.3,
-    segment.color = "grey50",
-    max.overlaps = 100
-  ) +
    labs(x = paste0("CCA1 (", var_exp[1], "%)"),
        y = paste0("CCA2 (", var_exp[2], "%)"),
        color = "Storage Duration (weeks)",
        fill = "Storage Duration (weeks)") +
   scale_colour_manual(values = c(
-    "0" = "#E69F00", "1" = "#0072B2", "2" = "#009E73", "4" = "#D55E00", "8" = "#CC79A7"
+    "0" = "#ffb2fd", "1" = "#009f81", "2" = "#ff5aaf", "4" = "#8400cd", "8" = "#00fccf"
   )) +
   scale_fill_manual(values = c(
-    "0" = "#E69F00", "1" = "#0072B2", "2" = "#009E73", "4" = "#D55E00", "8" = "#CC79A7"
+    "0"= "#ffb2fd", "1" = "#009f81", "2" = "#ff5aaf", "4" = "#8400cd", "8" = "#00fccf"
   )) +
   guides(
     fill = guide_legend(override.aes = list(fill = NA))  # optional: remove polygon edge in legend
   ) +
   scale_x_continuous(breaks = seq(from = -3, to = 1, by = 0.5)) +
   scale_y_continuous(breaks = seq(from = -2, to = 2, by = 0.5)) +
-  theme_classic()  
-  #theme(
-   # panel.grid.major = element_line(color = "grey80", size = 0.3) )
+  theme_classic() +
+  theme(legend.position = "bottom")
+
+duration.cca.plot
+
+## If i wanted to add the species names:
+#  geom_label_repel(
+#   data = species.scores,
+#  aes(x = CCA1, y = CCA2, label = species),
+# size = 3,
+#  fill = alpha("white", 0.4),  # white background with 60% opacity
+#  color = "black",
+# box.padding = 0.5,
+#  point.padding = 0.3,
+#  segment.color = "grey50",
+# max.overlaps = 100
+# ) +
 
 
+###temperature cca plot
 
-#temperature cca plot
-
-
+View(scores.df)
+scores.df <- scores.df %>%
+  mutate(temperature = dplyr::recode(temperature,
+                                     "A" = "Ambient",
+                                     "FR" = "Frozen"))
 hulls.temp <- scores.df %>% 
   group_by(temperature) %>% 
   do(find_hull(.))
@@ -718,17 +724,6 @@ temp.cca.plot<- ggplot(scores.df, aes(x = CCA1, y = CCA2, color = temperature)) 
   geom_polygon(data = hulls.temp, aes(fill = temperature, group = temperature), alpha = 0.3, color = NA) +
   geom_point(data = species.scores, aes(x = CCA1, y = CCA2), 
              shape = 17, color = "black", size = 3) +  # species points
-  geom_label_repel(
-    data = species.scores,
-    aes(x = CCA1, y = CCA2, label = species),
-    size = 3,
-    fill = alpha("white", 0.4),  # white background with 60% opacity
-    color = "black",
-    box.padding = 0.5,
-    point.padding = 0.3,
-    segment.color = "grey50",
-    max.overlaps = 100
-  ) +
   labs(x = paste0("CCA1 (", var_exp[1], "%)"),
        y = paste0("CCA2 (", var_exp[2], "%)"),
        color = "Storage Temperature",
@@ -742,7 +737,8 @@ temp.cca.plot<- ggplot(scores.df, aes(x = CCA1, y = CCA2, color = temperature)) 
   ) +
   scale_x_continuous(breaks = seq(from = -3, to = 1, by = 0.5)) +
   scale_y_continuous(breaks = seq(from = -2, to = 2, by = 0.5)) +
-  theme_classic()  
+  theme_classic()  +
+  theme(legend.position = "bottom")
 
 temp.cca.plot
 ### Heat maps with total hellinger transformation? ---- 
