@@ -279,7 +279,7 @@ View(sp_rich)
 #----
 ### Model species richness ----
 hist(sp_rich$richness)
-richness_glm<- glm(richness~ duration + temperature, data= sp_rich, family = poisson (link = log))
+richness_glm<- glm(richness~ duration + Temperature, data= sp_rich, family = poisson (link = log))
 summary(richness_glm)
 plot(richness_glm)
 
@@ -329,6 +329,57 @@ meta_richness_plot<- ggplot(sp_rich, aes(x = duration, y = richness, color = Tem
 meta_richness_plot
 #----
 #----
+
+# PLOT WITH MOLLY SUGGESTIONS ----
+
+predict.data.rich <- expand.grid(
+  duration = seq(min(sp_rich$duration), max(sp_rich$duration), length.out = 100),
+  Temperature = unique(sp_rich$Temperature)
+)
+
+View(predict.data.rich)
+# predict based on the glm quasi poisson model
+pred.rich <- predict(richness_glm, predict.data.rich, type = "link", se.fit = TRUE)
+
+
+#calculate the confidence intervals (still on the log scale)
+lwr = pred.rich$fit - 1.96 * pred.rich$se.fit
+upr = pred.rich$fit + 1.96 * pred.rich$se.fit
+
+# backtransform to the original scale for plotting
+predict.data.rich$fit    <- exp(pred.rich$fit)                         
+predict.data.rich$lwr    <- exp(lwr)
+predict.data.rich$upr    <- exp(upr)
+
+# make the plot
+ggplot(sp_rich, aes(x = duration, y = richness, color = Temperature, fill = Temperature)) +
+  # Ribbon for 95% CI
+  geom_ribbon(
+    data = predict.data.rich,
+    aes(x = duration, ymin = lwr, ymax = upr, fill = Temperature),
+    alpha = 0.2,
+    inherit.aes = FALSE) +
+  geom_line(
+    data = predict.data.rich,
+    aes(x = duration, y = fit, color = Temperature),
+    size = 1,
+    inherit.aes = FALSE) +
+  geom_point(
+    data = sp_rich,
+    aes(fill = Temperature),
+    shape = 21, stroke = 0.7,
+    position = position_jitterdodge(), size = 2) +
+  labs(
+    x = "Duration (Weeks)",
+    y = "Species Richness (count)"
+  ) +
+  scale_colour_manual(values = c("Ambient" = "#E69F00", "Frozen" = "#0072B2")) + 
+  scale_fill_manual(values = c("Ambient" = "#E69F00", "Frozen" = "#0072B2")) +    
+  theme_classic() +
+  theme(text = element_text(size = 15),
+        legend.position = "none") +
+  scale_x_continuous(breaks = 0:8)
+
 ### Create community matrix ----
 # Select only the necessary columns
 meta_long<- full_meta %>%
@@ -378,6 +429,8 @@ View(detections_sorted)
 detections_sorted
 # ----
 # ----
+
+
 ### PERMANOVA ----
 # dont need to do tranformation before PERMANOVA because bray-curtis already calculate rel abundance...
 # but need to check for dispersion in groups:
