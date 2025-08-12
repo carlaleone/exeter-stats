@@ -749,6 +749,12 @@ temp.cca.plot<- ggplot(scores.df, aes(x = CCA1, y = CCA2, color = temperature)) 
         legend.position = "bottom")
 
 temp.cca.plot
+
+
+library(patchwork)
+
+duration.cca.plot + temp.cca.plot
+
 ### Heat maps with total hellinger transformation? ---- 
 
 
