@@ -757,64 +757,55 @@ duration.cca.plot + temp.cca.plot
 
 ### Heat maps with total hellinger transformation? ---- 
 
-
+View(meta_wide)
 # Assume df_species contains only the species read counts
-hellinger_all <- decostand(meta_wide_clean, method = "hellinger")
-View(hellinger_all)
+hellinger_all<- (meta_wide)
 
 # Step 2: Add metadata back (e.g., temperature, duration)
-hellinger_all$temperature <- treatments_clean$temperature
-hellinger_all$duration <- treatments_clean$duration
+hellinger_all$temperature <- treatments$temperature
+hellinger_all$duration <- treatments$duration
+
+hellinger_all <- hellinger_all %>%
+  mutate(temperature = dplyr::recode(temperature,
+                                     "A" = "Ambient",
+                                     "FR" = "Frozen"))
+
+hellinger_all <- hellinger_all %>%
+  group_by(temperature, duration) %>%
+  summarise(across(where(is.numeric), sum), .groups = "drop")
+
+
+
+hellinger_all[, -(1:2)] <- decostand(hellinger_all[, -(1:2)], method = "hellinger")
+View(hellinger_all)
 
 # Step 3: Split by temperature group
 hell_ambient <- hellinger_all[hellinger_all$temperature == "Ambient", ]
 hell_frozen  <- hellinger_all[hellinger_all$temperature == "Frozen",  ]
 
-View(hell_ambient)
+
 #----
 #----
 ### Heat Map for frozen samples ----
-#using the hellinger transformation within the temperature group
-# Select only the frozen samples
-meta_frozen<- meta_wide # copy meta wide
-meta_frozen$`Sample ID` <- rownames(meta_frozen) # extract the sample id column
-rownames(meta_frozen) <- NULL # remove current row names
-meta_frozen <- meta_frozen %>% #merge the treatments
-  left_join(treatments, by = "Sample ID")
-meta_frozen <- meta_frozen[grepl('FR', meta_frozen$Sample.ID),] #select only frozen treatments
-meta_frozen$duration<- as.factor(meta_frozen$duration)
-View(meta_frozen)
-species_cols <- colnames(meta_frozen)[1:10]
 
-meta_frozen <- meta_frozen %>%
-  group_by(duration) %>%
-  summarise(across(all_of(species_cols), sum, na.rm = TRUE))
-
-View(meta_frozen)
-
-#make species the name column
-
-frozen_wide<- meta_frozen %>%
-  column_to_rownames(var = "duration")
-
-#frozen_wide <- frozen_wide[, colSums(frozen_wide != 0, na.rm = TRUE) > 0]
-
-View(frozen_wide)
-
-# make it a matrix so its only numeric and the heatmap works
-frozen_matrix<- as.matrix(frozen_wide)
+View(hell_frozen)
+hell_frozen <- hell_frozen[ , -1]
+rownames(hell_frozen) <- hell_frozen[[1]] # set first column as row names
+frozen_matrix<- as.matrix(hell_frozen)
 View(frozen_matrix)
-#hellinger transformation like bizzozzero
-fr_hel_matrix <- decostand(frozen_wide, method = "hellinger")
-View(fr_hel_matrix)
-?decostand
-install.packages("pheatmap")
-library(pheatmap)
+frozen_matrix <- frozen_matrix[ , -1]
 
-fr_hel_matrix_t <- t(fr_hel_matrix) #transpose the matrix
-fr_hel_matrix_na <- fr_hel_matrix_t # create new matrix for the NAs
+
+fr_hel_matrix_na <- frozen_matrix # create new matrix for the NAs
 fr_hel_matrix_na[fr_hel_matrix_na == 0] <- NA # record 0s as NAs
-my_colors_fr <- colorRampPalette(brewer.pal(9, "Blues"))(100) #select the colour ramp
+
+
+# Add it to the original data frame
+fr_hel_matrix_na <- rbind(fr_hel_matrix_na, new_row)
+fr_hel_matrix_na <- fr_hel_matrix_na[!rownames(fr_hel_matrix_na) %in% "temperature", ]
+fr_hel_matrix_na<- t(fr_hel_matrix_na)
+View(fr_hel_matrix_na)
+
 breaks <- seq(0, 1, length.out = 100)
 p_fr<- pheatmap(fr_hel_matrix_na,
                cluster_rows = F,
@@ -835,48 +826,21 @@ p_fr<- pheatmap(fr_hel_matrix_na,
 #----
 #----
 ### Heat Map for ambient samples ----
-# Select only the frozen samples
-meta_ambient<- meta_wide # copy meta wide
-meta_ambient$`Sample ID` <- rownames(meta_ambient) # extract the sample id column
-rownames(meta_ambient) <- NULL # remove current row names
-meta_ambient <- meta_ambient %>% #merge the treatments
-  left_join(treatments, by = "Sample ID")
-meta_ambient <- meta_ambient[grepl('A', meta_ambient$Sample.ID),] #select only frozen treatments
-meta_ambient$duration<- as.factor(meta_ambient$duration)
-View(meta_ambient)
-species_cols <- colnames(meta_ambient)[1:10]
+View(hell_ambient)
+hell_ambient <- hell_ambient[ , -1]
+rownames(hell_ambient) <- hell_ambient[[1]] # set first column as row names
+ambient_matrix<- as.matrix(hell_ambient)
+View(ambient_matrix)
+ambient_matrix <- ambient_matrix[ , -1]
 
-meta_ambient <- meta_ambient %>%
-  group_by(duration) %>%
-  summarise(across(all_of(species_cols), sum, na.rm = TRUE))
 
-#make species the name column
+a_hel_matrix_na <- ambient_matrix # create new matrix for the NAs
+a_hel_matrix_na[a_hel_matrix_na == 0] <- NA # record 0s as NAs
+a_hel_matrix_na<- t(a_hel_matrix_na)
+View(a_hel_matrix_na)
 
-ambient_wide<- meta_ambient %>%
-  column_to_rownames(var = "duration")
-
-#ambient_wide <- ambient_wide[, colSums(ambient_wide != 0, na.rm = TRUE) > 0]
-
-View(ambient_wide)
-
-# make it a matrix so its only numeric and the heatmap works
-#ambient_matrix<- as.matrix(ambient_wide)
-
-#hellinger transformation like bizzozzero
-am_hel_matrix <- decostand(ambient_wide, method = "hellinger")
-
-?decostand
-install.packages("pheatmap")
-library(pheatmap)
-
-install.packages("RColorBrewer")
-library(RColorBrewer)
-
-am_hel_matrix_t <- t(am_hel_matrix) #transpose the matrix
-am_hel_matrix_na <- am_hel_matrix_t # create new matrix for the NAs
-am_hel_matrix_na[am_hel_matrix_na == 0] <- NA # record 0s as NAs
 my_colors <- colorRampPalette(brewer.pal(9, "Oranges"))(100) #select the colour ramp
-p_a<- pheatmap(am_hel_matrix_na,
+p_a<- pheatmap(a_hel_matrix_na,
          cluster_rows = F,
          cluster_cols = F,
          breaks = breaks,
