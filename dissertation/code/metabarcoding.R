@@ -369,7 +369,7 @@ predict.data.rich$lwr    <- exp(lwr)
 predict.data.rich$upr    <- exp(upr)
 
 # make the plot
-ggplot(sp_rich, aes(x = duration, y = richness, color = Temperature, fill = Temperature)) +
+richness_plot<- ggplot(sp_rich, aes(x = duration, y = richness, color = Temperature, fill = Temperature)) +
   # Ribbon for 95% CI
   geom_ribbon(
     data = predict.data.rich,
@@ -396,6 +396,7 @@ ggplot(sp_rich, aes(x = duration, y = richness, color = Temperature, fill = Temp
   theme(text = element_text(size = 15),
         legend.position = "none") +
   scale_x_continuous(breaks = 0:8)
+
 
 # ----
 #----
@@ -916,8 +917,13 @@ duration_sac_plot
 
 
 # For the temperature treatment
+treatments_sac <- treatments_sac %>%
+  mutate(temperature = dplyr::recode(temperature,
+                                     "A" = "Ambient",
+                                     "FR" = "Frozen"))
 Accum.temp <- accumcomp(meta_wide, y=treatments_sac, factor='temperature', 
                         method='exact', conditioned=FALSE, plotit=FALSE)
+View(treatments_sac)
 
 accum.long.temp <- accumcomp.long(Accum.temp, ci=NA, label.freq=5)
 
@@ -927,12 +933,14 @@ temp_sac_plot <-
   geom_line(aes(colour = Grouping), size = 1.2) +
   scale_colour_manual(values = c("Ambient" = "#E69F00", "Frozen" = "#0072B2")) +  # line color
   scale_fill_manual(values = c("Ambient" = "#E69F00", "Frozen" = "#0072B2")) +    # ribbon fill
-  labs(x = "Samples", y = "Species Richness", colour = "Temperature", fill = "Temperature") +
-  theme_classic()
+  labs(x = "Samples", y = "Species Richness (count)", colour = "Temperature", fill = "Temperature") +
+  theme_classic() +
+  theme(text = element_text(size = 15),
+        legend.position = "none")
 
 temp_sac_plot
 
-
+richness_plot + temp_sac_plot
 
 #----
 #----
