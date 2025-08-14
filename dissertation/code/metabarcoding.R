@@ -57,6 +57,8 @@ meta <- meta2 %>%
 
 View(meta)
 
+meta$depth<- meta$`Total read`/150
+mean(meta$depth, na.rm = T)
 
 #----
 #----
