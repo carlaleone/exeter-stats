@@ -888,8 +888,8 @@ duration_sac_plot <-
   ggplot(data = accum.long.dur, aes(x = Sites, y = Richness)) + 
   geom_ribbon(aes(ymin = LWR, ymax = UPR, fill = Grouping), alpha = 0.1, colour = NA) +
   geom_line(aes(colour = Grouping), size = 0.8) +
-  scale_colour_manual(values = c("0" = "#E69F00", "1" = "#0072B2", "2" = "#009E73", "4" = "#D55E00", "8" = "#CC79A7")) +  # line color
-  scale_fill_manual(values = c("0" = "#E69F00", "1" = "#0072B2", "2" = "#009E73", "4" = "#D55E00", "8" = "#CC79A7")) +    # ribbon fill
+  scale_colour_manual(values = c("0" = "#ffb2fd", "1" = "#009f81", "2" = "#ff5aaf", "4" = "#8400cd", "8" = "#00fccf")) +  # line color
+  scale_fill_manual(values = c("0" = "#ffb2fd", "1" = "#009f81", "2" = "#ff5aaf", "4" = "#8400cd", "8" = "#00fccf")) +    # ribbon fill
   labs(x = "Samples", y = "Species Richness", colour = "Duration", fill = "Duration") +
   theme_classic()
 
