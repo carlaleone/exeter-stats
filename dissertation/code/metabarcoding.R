@@ -238,9 +238,9 @@ boxplot(meta$Reads ~ meta$Duration)
 #----
 #----
 ### Summary figures for read numbers (appendix) ----
-ggplot(data = meta, aes(x = factor(temperature), y = `Total read`, fill = temperature)) +
+boxplot_reads<- ggplot(data = meta, aes(x = factor(temperature), y = `Total read`, fill = temperature)) +
   geom_boxplot(position = position_dodge(width = 0.75)) +
-  facet_wrap(~ duration, scales = "free", ncol = 2) +
+  #facet_wrap(~ duration, scales = "free", ncol = 2) +
   labs(
     x = "Temperature",
     y = "Read Count",
@@ -255,7 +255,24 @@ ggplot(data = meta, aes(x = factor(temperature), y = `Total read`, fill = temper
     legend.position ="none"
   )
 
+scatter_plot_reads<- ggplot(meta, aes(x = factor(duration), y = `Total read`, color = temperature)) +
+  geom_jitter(width = 0.3, size = 3, alpha = 0.7) +  # adds some spread so points don't overlap
+  scale_color_manual(values = c("Ambient" = "#E69F00", "Frozen" = "#0072B2")) +
+ # scale_y_log10(labels = scales::comma) +  # log scale for better visibility
+  labs(
+    x = "Duration (weeks)",
+    y = "Read Count",
+    color = "Temperature"
+  ) +
+  theme_classic() +
+  theme(
+    text = element_text(size = 14),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none"
+  )
 
+
+boxplot_reads + scatter_plot_reads
 #----
 #----
 ### Species Richness ----
@@ -302,7 +319,7 @@ plot(richness_glm)
 
 #----
 #----
-### Plot species richness ----
+### Plot species richness with geom_smooth ----
 
 meta_richness_plot<- ggplot(sp_rich, aes(x = duration, y = richness, color = Temperature,fill = Temperature, group = Temperature)) +
   geom_smooth(method= glm, method.args = list(family = poisson(link = "log")), alpha = 0.2)+ 
@@ -330,7 +347,7 @@ meta_richness_plot
 #----
 #----
 
-# PLOT WITH MOLLY SUGGESTIONS ----
+### PLOT sp richness with Molly Suggestions (geom_ribbon with 95% CI) ----
 
 predict.data.rich <- expand.grid(
   duration = seq(min(sp_rich$duration), max(sp_rich$duration), length.out = 100),
@@ -380,6 +397,8 @@ ggplot(sp_rich, aes(x = duration, y = richness, color = Temperature, fill = Temp
         legend.position = "none") +
   scale_x_continuous(breaks = 0:8)
 
+# ----
+#----
 ### Create community matrix ----
 # Select only the necessary columns
 meta_long<- full_meta %>%
@@ -755,7 +774,7 @@ library(patchwork)
 
 duration.cca.plot + temp.cca.plot
 
-### Heat maps with total hellinger transformation? ---- 
+### Heat maps with total hellinger transformation ---- 
 
 View(meta_wide)
 # Assume df_species contains only the species read counts
