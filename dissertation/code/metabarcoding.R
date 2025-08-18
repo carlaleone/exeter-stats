@@ -677,6 +677,7 @@ groups
 scores.df$temperature<- groups$temperature
 scores.df$duration<- as.factor(groups$duration)
 
+View(scores.df)
 #next for the species:
 species.scores <- as.data.frame(scores(cca_model_i, choices = c(1,2), display = "species"))  #Using the scores function from vegan to extract the species scores and convert to a data.frame
 species.scores$species <- rownames(species.scores)  # create a column of species, from the rownames of species.scores
@@ -692,10 +693,10 @@ install.packages("ggrepel")
 library(ggrepel)
 
 duration.cca.plot<- ggplot(scores.df, aes(x = CCA1, y = CCA2, color = duration)) +
-  geom_point(size = 3) +
+  geom_point(size = 4, alpha = 0.75) +
   geom_polygon(data = hulls.duration, aes(fill = duration, group = duration), alpha = 0.3, color = NA) +
   geom_point(data = species.scores, aes(x = CCA1, y = CCA2), 
-             shape = 17, color = "black", size = 3) +  # species points
+             shape = 17, color = "black", size = 4) +  # species points
    labs(x = paste0("CCA1 (", var_exp[1], "%)"),
        y = paste0("CCA2 (", var_exp[2], "%)"),
        color = "Storage Duration (weeks)",
@@ -719,6 +720,8 @@ duration.cca.plot<- ggplot(scores.df, aes(x = CCA1, y = CCA2, color = duration))
         legend.position = "bottom")
 
 duration.cca.plot
+
+
 
 ## If i wanted to add the species names:
 #  geom_label_repel(
@@ -746,7 +749,7 @@ hulls.temp <- scores.df %>%
   do(find_hull(.))
 
 temp.cca.plot<- ggplot(scores.df, aes(x = CCA1, y = CCA2, color = temperature)) +
-  geom_point(size = 4) +
+  geom_point(size = 4, alpha = 0.75) +
   geom_polygon(data = hulls.temp, aes(fill = temperature, group = temperature), alpha = 0.3, color = NA) +
   geom_point(data = species.scores, aes(x = CCA1, y = CCA2), 
              shape = 17, color = "black", size = 4) +  # species points
