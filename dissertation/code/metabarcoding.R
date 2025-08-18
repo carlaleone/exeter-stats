@@ -294,6 +294,16 @@ sp_rich$richness<- as.numeric(sp_rich$richness)
 sp_rich$Temperature <- sp_rich$temperature
 
 View(sp_rich)
+
+mean(sp_rich$richness)
+sp_rich_clean <- sp_rich %>%
+  filter(richness != 0)
+
+aggregate(richness ~ Temperature, data = sp_rich, FUN = mean, na.rm = TRUE)
+aggregate(richness ~ Temperature, data = sp_rich_clean, FUN = mean, na.rm = TRUE)
+
+View(sp_rich_clean)
+mean(sp_rich_clean$richness)
 #----
 #----
 ### Model species richness ----
