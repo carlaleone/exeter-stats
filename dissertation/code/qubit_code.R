@@ -101,15 +101,18 @@ conc.model4<- glm(concentration~ duration*treatment, data= conc, family = quasip
 summary(conc.model4)
 plot(conc.model4)
 
-
+confint(conc.model4)
+tidy(conc.model4, conf.int = TRUE, conf.level = 0.95, exponentiate = FALSE)
 
 # test the significance of the interaction term 
 anova(conc.model3, conc.model4, test = "F")
 # p = 0.006, F = 8.9462, df = 2, 21
 # having the interaction makes a significant difference -> keep the interaction term.
 
+conc.nodur<- glm(concentration~ treatment, data= conc, family = quasipoisson (link = log))
+
 #interaction effect
-drop1(conc.model4, test="F")
+anova(conc.nodur, conc.model3, test="F")
 
 
 # individual treatment effects

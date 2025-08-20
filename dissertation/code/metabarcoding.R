@@ -58,7 +58,9 @@ meta <- meta2 %>%
 View(meta)
 
 meta$depth<- meta$`Total read`/150
-mean(meta$depth, na.rm = T)
+mean(meta$`Total read`)
+
+aggregate(`Total read` ~ temperature, data = meta, FUN = mean, na.rm = TRUE)
 
 #----
 #----
@@ -310,24 +312,29 @@ mean(sp_rich_clean$richness)
 hist(sp_rich$richness)
 richness_glm<- glm(richness~ duration + Temperature, data= sp_rich, family = poisson (link = log))
 summary(richness_glm)
-plot(richness_glm)
+plot(richness_i)
 
-richness_i<- glm(richness~ duration* temperature, data= sp_rich, family = poisson (link = log))
+richness_i<- glm(richness~ duration* Temperature, data= sp_rich, family = poisson (link = log))
 summary(richness_i)
 35.455/37
 # dispersion parameter
 
-richness_simple<- glm(richness~ duration, data= sp_rich, family = poisson (link = log))
+richness_simple<- glm(richness~ Temperature, data= sp_rich, family = poisson (link = log))
 summary(richness_glm)
 anova(richness_simple, richness_glm,  test="Chisq")
 anova(richness_glm, richness_i,  test="Chisq")
-anova(richness_glm)
-anova(richness_simple)
 
-drop1(richness_glm, test="Chisq")
+anova(richness_i, test = "Chisq")
+
+drop1(richness_i, test="Chisq")
 # not statistically significantly different to 
 
 plot(richness_glm)
+confint(richness_i)
+
+library(broom)
+
+tidy(richness_i, conf.int = TRUE, conf.level = 0.95, exponentiate = FALSE)
 
 #----
 #----
@@ -368,7 +375,7 @@ predict.data.rich <- expand.grid(
 
 View(predict.data.rich)
 # predict based on the glm quasi poisson model
-pred.rich <- predict(richness_glm, predict.data.rich, type = "link", se.fit = TRUE)
+pred.rich <- predict(richness_i, predict.data.rich, type = "link", se.fit = TRUE)
 
 
 #calculate the confidence intervals (still on the log scale)
@@ -409,6 +416,7 @@ richness_plot<- ggplot(sp_rich, aes(x = duration, y = richness, color = Temperat
         legend.position = "none") +
   scale_x_continuous(breaks = 0:8)
 
+richness_plot
 
 # ----
 #----
