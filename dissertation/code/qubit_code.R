@@ -12,6 +12,9 @@ setwd("/Users/carlaleone/Desktop/Exeter/dissertation")
 ### Load and Clean the data ----
 conc<- read_excel('data/new_qubit.xlsx')
 View(conc)
+mean(conc$concentration)
+sd(conc$concentration)/sqrt(25)
+aggregate(concentration ~ treatment, data = conc, FUN = mean, na.rm = TRUE)
 
 
 # make concentration numeric to expose other NAs - expect warning of NAs introduced by coercion

@@ -502,8 +502,8 @@ plot(betadispersion)
 
 # do the PERMANOVA
 
-
-perm.i<- adonis2(meta_wide_clean ~ duration*temperature , data = treatments_clean, permutations = 999, by = "margin")
+view(meta_wide_clean)
+perm.i<- adonis2(meta_wide_clean ~ duration*temperature , data = treatments_clean, method = "bray", permutations = 999, by = "terms")
 perm.i
 
 perm.b<- adonis2(meta_wide_clean ~ duration+temperature , data = treatments_clean, permutations = 999)
@@ -522,11 +522,13 @@ print(adj_R2_summary)
 View(treatments_clean)
 head(treatments_clean)
 
-perm.full <- adonis2(meta_wide_clean ~ temperature + duration + temperature:duration, 
+perm.full<- adonis2(meta_wide_clean ~ temperature + duration + temperature:duration, 
                      data = treatments_clean, 
                      permutations = 999, 
                      by = "margin")
 perm.full
+
+?adonis2
 
 #----
 #----
@@ -546,14 +548,18 @@ View(meta_hel)
 
 #create the cca model with the interaction
 cca_model_i <- cca(meta_hel ~ duration*temperature, data = treatments_cca)
-
+cca_model_i
 ?cca
 ?cca.object
 #perform a permutational anova
-anova(cca_model_i, by = "term",  permutations = 9999)  # tests each term: Temp, Time, and interaction
-
+anova(cca_model_i, by = "term",  permutations = 999)  # tests each term: Temp, Time, and interaction
+anova(cca_model_i, by = "margin",  permutations = 999)
 anova(cca_model_i)
 
+summary(eigenvals(cca_model_i))
+?eigenvals.cca
+eigenvals(cca_model_i, model = c("all", "unconstrained", "constrained"),
+          constrained = NULL)
 #----
 #----
 ### CCA with interaction Model Diagnostics ----
