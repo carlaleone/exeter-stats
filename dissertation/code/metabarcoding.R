@@ -1021,6 +1021,14 @@ View(treatments.chao)
 chao2_est <-specpool(meta_wide, treatments.chao$Group)
 t(chao2_est)
 
+summary_richness<- meta %>%
+  group_by(temperature, duration) %>%
+  summarise(rich_obs = n_distinct(`Species`,na.rm = TRUE),
+            SD_obs = sd(rich_obs, na.rm = TRUE),
+            Count = n(),
+            se_obs = SD_obs/sqrt(4)) %>%
+  ungroup()
+
 summary_richness <- sp_rich %>%
   group_by(duration, temperature) %>%
   summarize(
@@ -1057,20 +1065,14 @@ ggplot(richness_long, aes(x = duration, y = Richness, color = temperature, linet
     alpha = 0.2,
     color = NA
  ) +
-  geom_ribbon(
-    data = richness_long %>% filter(RichnessType == "rich_obs"),
-    aes(ymin = Richness - se_obs, ymax = Richness + se_obs, fill = temperature),
-    alpha = 0.2,
-    color = NA
-  ) +
   labs(
     x = "Duration (weeks)",
     y = "Species Richness",
   ) +
   theme_classic() +
-  scale_linetype_manual(values = c("solid", "dashed")) +
-  scale_color_manual(values = c("#0072B2", "#E69F00")) +
-  scale_fill_manual(values = c("#0072B2", "#E69F00")) +
+  scale_linetype_manual(values = c("dashed", "solid")) +
+  scale_color_manual(values = c("#E69F00", "#0072B2")) +
+  scale_fill_manual(values = c("#E69F00", "#0072B2")) +
   theme(text = element_text(size = 15),
         legend.position = "none",
         )
