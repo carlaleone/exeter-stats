@@ -1005,6 +1005,80 @@ fr_sac_reads_plot
 
 #----
 #----
+### Chao estimators ----
+View(meta_wide)
+
+treatments.chao<- treatments
+treatments.chao <- treatments.chao %>%
+  mutate(temperature = dplyr::recode(temperature,
+                                     "A" = "Ambient",
+                                     "FR" = "Frozen"))
+
+treatments.chao$Group <- interaction(treatments.chao$temperature, treatments.chao$duration) 
+treatments.chao<- treatments.chao %>%
+  column_to_rownames(var = "Sample ID")
+View(treatments.chao)
+chao2_est <-specpool(meta_wide, treatments.chao$Group)
+t(chao2_est)
+
+summary_richness <- sp_rich %>%
+  group_by(duration, temperature) %>%
+  summarize(
+    rich_obs = max(richness, na.rm = TRUE),
+    SD_obs = sd(richness, na.rm = TRUE),
+    Count = n(),
+    se_obs = SD_obs/sqrt(4)
+  )
+View(summary_richness)
+summary_richness$Group <- interaction(summary_richness$temperature, summary_richness$duration) 
+
+chao_df <- as.data.frame(chao2_est)
+chao_df$Group <- rownames(chao_df)
+View(chao_df)
+
+
+chao_richness<-  merge(summary_richness, chao_df, by = "Group", all.x = TRUE)
+View(chao_richness)
+
+richness_long <- chao_richness %>%
+  pivot_longer(cols = c(rich_obs, chao),
+               names_to = "RichnessType",
+               values_to = "Richness")
+View(richness_long)
+richness_long$Richness[is.na(richness_long$Richness)] <- 0
+
+ggplot(richness_long, aes(x = duration, y = Richness, color = temperature, linetype = RichnessType)) +
+  geom_line(size = 0.7) +
+  geom_point(size = 2) +
+  # Add ribbons for Chao SE
+  geom_ribbon(
+    data = richness_long %>% filter(RichnessType == "chao"),
+    aes(ymin = Richness - chao.se, ymax = Richness + chao.se, fill = temperature),
+    alpha = 0.2,
+    color = NA
+ ) +
+  geom_ribbon(
+    data = richness_long %>% filter(RichnessType == "rich_obs"),
+    aes(ymin = Richness - se_obs, ymax = Richness + se_obs, fill = temperature),
+    alpha = 0.2,
+    color = NA
+  ) +
+  labs(
+    x = "Duration (weeks)",
+    y = "Species Richness",
+  ) +
+  theme_classic() +
+  scale_linetype_manual(values = c("solid", "dashed")) +
+  scale_color_manual(values = c("#0072B2", "#E69F00")) +
+  scale_fill_manual(values = c("#0072B2", "#E69F00")) +
+  theme(text = element_text(size = 15),
+        legend.position = "none",
+        )
+
+
+
+#----
+#----
 ### Testing ranacapa package ----
 library(devtools)
 install.packages("devtools")
