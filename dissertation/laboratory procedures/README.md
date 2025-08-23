@@ -1,5 +1,5 @@
 ## Lab Procedures
-This folder contains the lab procedures that were used for DNA extractions and Qubit Assays. 
+This folder contains the lab procedures that were used for DNA extractions, Qubit Assays (DNA Concentration), and PCR and sequencing by Exeter Sequencing. 
 
 ### [Extractions](https://github.com/carlaleone/exeter-stats/tree/main/dissertation/laboratory%20procedures/extractions)
 - Protocol follows procedures outlined by [Maiello et al. Little samplers, big fleet: eDNA metabarcoding from commercial trawlers enhances ocean monitoring 2022. Fisheries Research](https://www.sciencedirect.com/science/article/pii/S0165783622000364). And as used in Kressler, Whitelegg et al. In Review. Environmental DNA.
