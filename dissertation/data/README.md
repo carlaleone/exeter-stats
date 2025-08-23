@@ -3,3 +3,4 @@ This folder contains all the data used for analysis and the main results data fr
 - [metabarcoding results](https://github.com/carlaleone/exeter-stats/blob/main/dissertation/data/metabarcoding_results.csv)
 
 
+All the remaining data sets were used for practice.
