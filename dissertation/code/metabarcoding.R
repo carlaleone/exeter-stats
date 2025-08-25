@@ -343,7 +343,6 @@ perm.b
 
 #----
 
-# ----
 ### Plot CCA using eigenvalues----
 eig_vals <- eigenvals(cca_model_i) # eigenvalues are the variance explained by each canonical axis
 var_exp <- round(100 * eig_vals[1:2] / sum(eig_vals), 1)  # % variance on Axis 1 and 2
@@ -553,7 +552,8 @@ treatments_sac<- treatments %>%
 Accum.dur <- accumcomp(meta_wide, y=treatments_sac, factor='duration', 
                        method='exact', conditioned=FALSE, plotit=FALSE)
 
-accum.long.dur <- accumcomp.long(Accum.dur, ci=NA, label.freq=5)
+accum.long.dur <- accumcomp.long(Accum.dur, ci=0.95, label.freq=5)
+View(Accum.dur)
 
 duration_sac_plot <- 
   ggplot(data = accum.long.dur, aes(x = Sites, y = Richness)) + 
@@ -575,7 +575,7 @@ treatments_sac <- treatments_sac %>%
 Accum.temp <- accumcomp(meta_wide, y=treatments_sac, factor='temperature', 
                         method='exact', conditioned=FALSE, plotit=FALSE)
 
-accum.long.temp <- accumcomp.long(Accum.temp, ci=NA, label.freq=5)
+accum.long.temp <- accumcomp.long(Accum.temp, ci=0.95, label.freq=5)
 
 temp_sac_plot <- 
   ggplot(data = accum.long.temp, aes(x = Sites, y = Richness)) + 

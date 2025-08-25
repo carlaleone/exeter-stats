@@ -14,8 +14,9 @@ conc<- read_excel('data/new_qubit.xlsx')
 View(conc)
 mean(conc$concentration)
 sd(conc$concentration)/sqrt(25)
-aggregate(concentration ~ treatment, data = conc, FUN = mean, na.rm = TRUE)
+aggregate(concentration ~ treatment, data = conc, FUN = sd, na.rm = TRUE)
 
+0.011/sqrt(9)
 
 # make concentration numeric to expose other NAs - expect warning of NAs introduced by coercion
 conc$concentration<- as.numeric(conc$concentration)
