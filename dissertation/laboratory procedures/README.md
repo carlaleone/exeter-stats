@@ -14,3 +14,7 @@ This folder contains the lab procedures that were used for DNA extractions, Qubi
 
 ### [PCR and Sequencing](https://github.com/carlaleone/exeter-stats/tree/main/dissertation/laboratory%20procedures/pcr%20and%20sequencing)
 - All samples were sent to Exeter Sequencing for PCR and sequencing with the MiFish U/E Primers. The protocol used by Exeter Sequencing can be found in [this spreadsheet](https://github.com/carlaleone/exeter-stats/blob/main/dissertation/laboratory%20procedures/SeqMethodChecklist_11738___11569_MiFish_SOP_Joint_-_bW___GM_plate1_16_06_2025.xlsx)
+
+
+### [Bioinformatics](https://github.com/carlaleone/exeter-stats/tree/main/dissertation/laboratory%20procedures/bioinformatics)
+- Sequencing files were uploaded to the MitoFish pipeline and specific parameters are outlined in [this README file](https://github.com/carlaleone/exeter-stats/tree/main/dissertation/laboratory%20procedures/bioinformatics).
