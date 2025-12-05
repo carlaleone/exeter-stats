@@ -85,6 +85,11 @@ conc.model2<- glm(concentration~ duration*treatment, data= conc, family = quasip
 summary(conc.model2)
 plot(conc.model2)
 
+# check leverage of the points, any value over 2 is a concern.
+hats <- as.data.frame(hatvalues(conc.model2))
+hats
+plot(hatvalues(conc.model2), type = 'h')
+# higher leverage points in descending order = A8.4, FR4.1, FR0.1
 
 confint(conc.model2)
 tidy(conc.model2, conf.int = TRUE, conf.level = 0.95, exponentiate = FALSE)
