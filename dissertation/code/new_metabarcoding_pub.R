@@ -6,10 +6,9 @@
 install.packages("pacman")
 library(pacman)
 pacman::p_load(stringr, tidyverse, readxl, readr, vegan, report, BiodiversityR, RColorBrewer, car, pheatmap, broom, patchwork)
-getwd()
 setwd("/Users/carlaleone/Desktop/Exeter/dissertation")
 metabarcoding_data <- read_csv("data/metabarcoding_results_new.csv") 
-View(metabarcoding_data)
+#View(metabarcoding_data)
 #----
 
 #----
@@ -185,7 +184,7 @@ predict.data.rich <- expand.grid(
   Temperature = unique(sp_rich$Temperature)
 )
 
-View(predict.data.rich)
+#View(predict.data.rich)
 
 # predict based on the glm poisson model
 pred.rich <- predict(richness_i, predict.data.rich, type = "link", se.fit = TRUE)
@@ -203,7 +202,7 @@ predict.data.rich$upr    <- exp(upr)
 # Make the plot with predicted data and confidence intervals in geom_ribbon
 richness_plot<- ggplot(sp_rich, aes(x = duration, y = richness, color = Temperature, fill = Temperature)) +
   geom_ribbon(data = predict.data.rich, aes(x = duration, ymin = lwr, ymax = upr, fill = Temperature),  alpha = 0.2, inherit.aes = FALSE) +
-  geom_line(data = predict.data.rich, aes(x = duration, y = fit, color = Temperature), size = 1, inherit.aes = FALSE) +
+  geom_line(data = predict.data.rich, aes(x = duration, y = fit, color = Temperature), linewidth = 1, inherit.aes = FALSE) +
   geom_point(data = sp_rich, aes(fill = Temperature), shape = 21, stroke = 0.7,position = position_jitterdodge(), size = 2) +
   labs(
     x = "Duration (Weeks)",
@@ -229,7 +228,7 @@ richness_plot
 # Select only the necessary columns
 meta_long<- full_meta %>%
   select(`Sample ID`, `Species`, `Total read`)
-View(meta_long)
+#View(meta_long)
 
 # Then pivot the data to make it wide, so that each species is in its own column. 
 meta_wide<- meta_long %>% 
@@ -255,10 +254,10 @@ meta_wide_clean <- meta_wide[rowSums(meta_wide) > 0, ]
 treatments<- sp_rich %>%
   distinct(`Sample ID`, temperature, duration)
 
-
+View(treatments)
 # treatments including only the data that has actual results
 treatments_clean <- treatments %>%
-  filter(`Sample ID` %in% c("A0_2", "A0_4", "A1_1", "A4_2", "A4_3", "A4_4", "A8_1", "A8_2", "A8_4", "FR0_1", "FR2_1", "FR2_3", "FR8_4"))
+  filter(`Sample ID` %in% c("A0_2", "A1_1", "A4_2", "A4_3", "A4_4", "A8_1", "A8_2", "A8_4", "FR0_1", "FR2_1", "FR8_4"))
 
 # ----
 # ----
@@ -298,10 +297,11 @@ eigenvals(cca_model_i, model = c("all", "unconstrained", "constrained"),
 ### CCA model diagnostics ----
 # assess VIF for collinearity, if greater than 10 suggests high collinearity
 vif.cca(cca_model_i)
+#below 10
 
 # adjusted r2 of the model
 RsquareAdj(cca_model_i)
-#  0.062
+#  0.09128
 
 #----
 
