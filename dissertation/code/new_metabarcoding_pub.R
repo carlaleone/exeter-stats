@@ -321,7 +321,7 @@ permutest(betadispersion.duration)
 
 # create a term for temp and duration interactions
 treatments_clean$Group <- interaction(treatments_clean$temperature, treatments_clean$duration) 
-view(treatments_clean)
+#view(treatments_clean)
 detadispersion.interaction <- betadisper(vegdist(meta_wide_clean, method = "bray") , treatments_clean$Group) 
 permutest(detadispersion.interaction)
 
@@ -532,6 +532,8 @@ p_a<- pheatmap(a_hel_matrix_na,
                main = "Ambient",
                cellwidth = 30,    # width of each column
                cellheight = 27)
+
+p_fr
 
 #----
 
