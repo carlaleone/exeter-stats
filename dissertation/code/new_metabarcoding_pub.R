@@ -671,6 +671,7 @@ summary_meta <- meta %>%
   )
 View(summary_meta)
 sd(full_meta$`Align Len`, na.rm = T)
+sum(summary_meta$Total_Read) # = 467030
 
 
 # Treatment level summary stats
@@ -682,27 +683,27 @@ View(summary_meta_sd)
 
 
 mean(summary_meta_sd$Total_Read)
-# 97766
+# 66718.57
 sd(summary_meta_sd$Total_Read)
-# 193611
+# 112839.2
 
 sd(summary_meta_sd$Total_Read)/(sqrt(7))
-# 73178 = the standard error of the mean across all treatment reads
+# 42649.21 = the standard error of the mean across all treatment reads
 
-sum(summary_meta_sd$BP_length)/18
+sum(summary_meta_sd$BP_length)/16 # = 180.8125
 
 # How many reads from frozen samples?
 summary_frozen_reads<- summary_meta %>%
   filter(temperature == "Frozen")
 View(summary_frozen_reads)
 sum(summary_frozen_reads$Total_Read)
-#587927
+#370635
 
 # How many reads from ambient samples?
 summary_ambient_reads<- summary_meta %>%
   filter(temperature == "Ambient")
 sum(summary_ambient_reads$Total_Read)
-#96438
+#96395
 
 
 ## How many species did we detect in total?
@@ -712,10 +713,10 @@ unique(meta$Species)
 
 # how many total detections?
 length(unique(meta$`Total read`))
-#18 total detections
+#16 total MiFish detections
 
-#13 samples had detections
-
+#12 samples had detections
+length(unique(meta$`Sample name`))
 
 ## How many species detected for each temperature?
 
@@ -724,23 +725,23 @@ meta_frozen_long<- meta %>%
   filter(temperature == "Frozen")
 View(meta_frozen_long)
 unique(meta_frozen_long$Species)
-# 4 species detected from frozen samples
+# 3 species detected from frozen samples: Pollachius pollachius, sardina pilchardus, atherina boyeri
 
 length(unique(meta_frozen_long$`Total read`))
-# 5 total detectionsan
+# 4 total detectionsan
 
 # ambient samples subset of meta df
 meta_ambient_long<- meta %>%
   filter(temperature == "Ambient")
 unique(meta_ambient_long$Species)
-# 10 species
+# 9 species = scomber scombrus, sardina pilchardus, pollachius pollachius, trachinus draco, ammodytes personaus, ammodytes marinus, lophius piscatorius, clupea harengus
 
 length(unique(meta_ambient_long$`Total read`))
-# 14 total detections 
+# 13 total detections 
 
 # percent of detections contributed by ambient samples
-14/18
-# 77.8% 
+13/16
+# 81.3% 
 
 ## Summary of unfiltered results (including all blanks, controls, and extra species) 
 summary_all_positive<- metabarcoding_data %>% drop_na(Species)
@@ -808,7 +809,10 @@ treatment_detections_summary <- meta %>%
 View(treatment_detections_summary)
 
 sum(meta$`Total read`, na.rm = TRUE)
-# total number of reads = 684365
+# total number of reads = 467030
+
+370635/467030
+#79.4%
 
 boxplot(meta$`Total read` ~ meta$temperature)
 boxplot(meta$`Total read` ~ meta$duration)
