@@ -123,6 +123,41 @@ sp_rich$Temperature <- sp_rich$temperature
 sp_rich_clean <- sp_rich %>%
   filter(richness != 0)
 
+
+# finding mean and se richness:
+mean(subset(sp_rich, Temperature == "Ambient")$richness,
+     na.rm = TRUE)
+# 0.65
+
+sd(subset(sp_rich, Temperature == "Ambient")$richness,
+     na.rm = TRUE)/sqrt(20)
+# 0.2209
+
+mean(subset(sp_rich, Temperature == "Frozen")$richness,
+     na.rm = TRUE)
+#0.15
+
+sd(subset(sp_rich, Temperature == "Frozen")$richness,
+   na.rm = TRUE)/sqrt(20)
+#0.0819
+
+
+mean(subset(sp_rich_clean, Temperature == "Ambient")$richness,
+     na.rm = TRUE)
+#1.625
+
+sd(subset(sp_rich_clean, Temperature == "Ambient")$richness,
+   na.rm = TRUE)/sqrt(8)
+#0.32
+
+mean(subset(sp_rich_clean, Temperature == "Frozen")$richness,
+     na.rm = TRUE)
+#1
+
+sd(subset(sp_rich_clean, Temperature == "Frozen")$richness,
+   na.rm = TRUE)/sqrt(3)
+#0
+
 #----
 
 #----
@@ -130,14 +165,14 @@ sp_rich_clean <- sp_rich %>%
 ### Model species richness ----
 
 # assess the distribution
-hist(sp_rich$richness)
+hist(sp_rich$richness) # very 0-inflated
 
 # create GLM with poisson distribution and interaction term
 richness_i<- glm(richness~ duration* Temperature, data= sp_rich, family = poisson (link = log))
 summary(richness_i)
 
 # dispersion parameter
-35.455/37 # = 0.9582432 < 1.5 so no overdispersion and poisson is fine
+32.707/36 # = 0.9085278 < 1.5 so no overdispersion and poisson is fine
 
 # model plots
 plot(richness_i)
@@ -163,12 +198,18 @@ anova(richness_no_int, richness_i,  test="Chisq")
 
 #overall model test
 anova(richness_i, test = "Chisq")
+drop1(richness_i, test = "Chisq")
+drop1(richness_no_int, test = "Chisq")
+anova(richness_no_int,test = "Chisq")
 
 # condfidence intervals:
 confint(richness_i)
 
 # extract estimates of the model, also gives conf intervals
 tidy(richness_i, conf.int = TRUE, conf.level = 0.95, exponentiate = FALSE)
+
+#do it for the model without interaction
+tidy(richness_no_int, conf.int = TRUE, conf.level = 0.95, exponentiate = FALSE)
 
 #----
 
@@ -186,8 +227,8 @@ predict.data.rich <- expand.grid(
 
 #View(predict.data.rich)
 
-# predict based on the glm poisson model
-pred.rich <- predict(richness_i, predict.data.rich, type = "link", se.fit = TRUE)
+# predict based on the glm poisson model (without interaction)
+pred.rich <- predict(richness_no_int, predict.data.rich, type = "link", se.fit = TRUE)
 
 
 #calculate the confidence intervals (still on the log scale)
@@ -254,7 +295,7 @@ meta_wide_clean <- meta_wide[rowSums(meta_wide) > 0, ]
 treatments<- sp_rich %>%
   distinct(`Sample ID`, temperature, duration)
 
-View(treatments)
+#View(treatments)
 # treatments including only the data that has actual results
 treatments_clean <- treatments %>%
   filter(`Sample ID` %in% c("A0_2", "A1_1", "A4_2", "A4_3", "A4_4", "A8_1", "A8_2", "A8_4", "FR0_1", "FR2_1", "FR8_4"))
@@ -297,7 +338,7 @@ eigenvals(cca_model_i, model = c("all", "unconstrained", "constrained"),
 ### CCA model diagnostics ----
 # assess VIF for collinearity, if greater than 10 suggests high collinearity
 vif.cca(cca_model_i)
-#below 10
+# all are below 10
 
 # adjusted r2 of the model
 RsquareAdj(cca_model_i)
@@ -329,8 +370,8 @@ permutest(detadispersion.interaction)
 ## Make the PERMANOVA
 
 # with interaction term
-perm.i<- adonis2(meta_wide_clean ~ duration*temperature , data = treatments_clean, method = "bray", permutations = 999, by = "terms")
-summary(perm.i)
+perm.i<- adonis2(meta_wide_clean ~ duration*temperature , data = treatments_clean, method = "bray", permutations = 999, by = "term")
+perm.i
 
 # without the interaction term
 perm.b<- adonis2(meta_wide_clean ~ duration+temperature , data = treatments_clean, method = "bray", permutations = 999, by = "terms")
@@ -629,6 +670,14 @@ View(chao_df)
 
 # merge chao and observed richness into one data set
 chao_richness<-  merge(summary_richness, chao_df, by = "Group", all.x = TRUE)
+
+#mean chao richness estimate
+mean(chao_df$chao, na.rm = TRUE)
+# 2.982143
+
+#ambient mean
+mean(subset(chao_richness, temperature == "Ambient")$chao, na.rm = TRUE)
+mean(subset(chao_richness, temperature == "Frozen")$chao, na.rm = TRUE)
 
 # categorize by richness type
 richness_long <- chao_richness %>%
