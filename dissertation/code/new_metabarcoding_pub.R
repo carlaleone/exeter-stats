@@ -53,6 +53,10 @@ meta <- meta2 %>%
                                      "A" = "Ambient",
                                      "FR" = "Frozen"))
 
+# remove the duplicate pollachius pollachius read
+meta <- meta %>%
+  filter(!(`Sample ID` == "FR0_1" & Confidence == "LOW"))
+
 # final metabarcoding data sheet
 
 
@@ -265,11 +269,14 @@ richness_plot
 ### MULTIVARIATE ANALYSIS: SPECIES COMPOSITION---- 
 
 ### Create community data ----
+# remove duplicate fr01 pollachius pollachius
+full_meta <- full_meta %>%
+  filter(!(`Sample ID` == "FR0_1" & Confidence == "LOW"))
 
 # Select only the necessary columns
 meta_long<- full_meta %>%
   select(`Sample ID`, `Species`, `Total read`)
-#View(meta_long)
+View(meta_long)
 
 # Then pivot the data to make it wide, so that each species is in its own column. 
 meta_wide<- meta_long %>% 
@@ -278,6 +285,11 @@ meta_wide<- meta_long %>%
     values_from = `Total read`, # values come from the quantity column measured earlier
     values_fn = sum,  # taking the mean of the repeated values
     values_fill = 0) 
+
+data_long %>%
+  filter(reads > 0) %>%
+  group_by(temperature, species) %>%
+  summarise(n_detections = n(), .groups = "drop")
 
 # Remove NAs
 meta_wide <- meta_wide %>% select(-`NA`)
@@ -290,6 +302,7 @@ meta_wide<- meta_wide %>%
 # Remove rows that have all 0s
 meta_wide_clean <- meta_wide[rowSums(meta_wide) > 0, ]
 
+View(meta_wide_clean)
 
 # Make another data frame with the different categories for each Sample ID
 treatments<- sp_rich %>%
@@ -370,7 +383,7 @@ permutest(detadispersion.interaction)
 ## Make the PERMANOVA
 
 # with interaction term
-perm.i<- adonis2(meta_wide_clean ~ duration*temperature , data = treatments_clean, method = "bray", permutations = 999, by = "term")
+perm.i<- adonis2(meta_wide_clean ~ duration*temperature , data = treatments_clean, method = "bray", permutations = 999)
 perm.i
 
 # without the interaction term
@@ -724,7 +737,7 @@ ggplot(richness_long, aes(x = duration, y = Richness, color = temperature, linet
 
 # ----
 # ----
-### Extra data exploration ----
+### Extra data exploration for sequencing summary ----
 # Summary table for the number of Reads, bp lenghts, for each treatment (10 rows total)
 summary_meta <- meta %>%
   group_by(duration, temperature) %>%
@@ -737,7 +750,8 @@ summary_meta <- meta %>%
   )
 View(summary_meta)
 sd(full_meta$`Align Len`, na.rm = T)
-sum(summary_meta$Total_Read) # = 467030
+# 1.973787
+sum(summary_meta$Total_Read) # = 466857
 
 
 # Treatment level summary stats
@@ -749,12 +763,12 @@ View(summary_meta_sd)
 
 
 mean(summary_meta_sd$Total_Read)
-# 66718.57
+# 66693.86
 sd(summary_meta_sd$Total_Read)
-# 112839.2
+# 112856.2
 
 sd(summary_meta_sd$Total_Read)/(sqrt(7))
-# 42649.21 = the standard error of the mean across all treatment reads
+# 42655.62 = the standard error of the mean across all treatment reads
 
 sum(summary_meta_sd$BP_length)/16 # = 180.8125
 
@@ -763,7 +777,7 @@ summary_frozen_reads<- summary_meta %>%
   filter(temperature == "Frozen")
 View(summary_frozen_reads)
 sum(summary_frozen_reads$Total_Read)
-#370635
+#370462
 
 # How many reads from ambient samples?
 summary_ambient_reads<- summary_meta %>%
@@ -771,18 +785,28 @@ summary_ambient_reads<- summary_meta %>%
 sum(summary_ambient_reads$Total_Read)
 #96395
 
+370462/466857
+#0.7935235
 
 ## How many species did we detect in total?
 length(unique(meta$Species))
-# 10 unique species [remove the NA]
+# 9 unique species [remove the NA]
 unique(meta$Species)
 
-# how many total detections?
-length(unique(meta$`Total read`))
-#16 total MiFish detections
 
-#12 samples had detections
+# in data_long
+sum(is.na(data_long$reads))
+sum(data_long$reads == 0, na.rm = TRUE)
+# how many total detections?
+meta %>%
+  filter(!is.na(`Total read`) & `Total read` > 0) %>%
+  group_by(temperature, Species) %>%
+  summarise(n_detections = n(), .groups = "drop")
+#17 total MiFish detections 
+
+#11 samples had detections [remove the NA]fo
 length(unique(meta$`Sample name`))
+unique(meta$`Sample name`)
 
 ## How many species detected for each temperature?
 
@@ -877,8 +901,6 @@ View(treatment_detections_summary)
 sum(meta$`Total read`, na.rm = TRUE)
 # total number of reads = 467030
 
-370635/467030
-#79.4%
 
 boxplot(meta$`Total read` ~ meta$temperature)
 boxplot(meta$`Total read` ~ meta$duration)
@@ -899,6 +921,74 @@ readnumber.plot
 
 boxplot(meta$Reads ~ meta$Duration)
 # seems like fewer reads in week 4
+
+
+# Sequencing Depth ----
+#Sequencing depth = number of times the target sequence was identified in the samples including only samples where sequences were identified:
+sum(meta_wide_clean)
+# 467,030 reads from the 11 samples 
+#466, 857
+467030 - 466857
+sum(meta_wide_clean)/11
+#42441.55
+
+#convert to long format
+colnames(meta_wide_clean)
+meta_long_clean <- meta_wide_clean %>%
+  rownames_to_column(var = "Sample ID") %>%
+  pivot_longer(cols = -"Sample ID",
+               names_to = "species",
+               values_to = "reads")
+
+data_long <- meta_long_clean %>%
+  left_join(treatments, by = "Sample ID")
+View(data_long)
+
+data_long<- data_long %>%
+  filter(reads > 0) %>%
+  group_by(temperature, species, `Sample ID`) %>%
+  summarise(n_detections = n(),
+            reads = `reads`,
+            .groups = "drop")
+
+# sd of total sampling depth
+sd(data_long$reads)/sqrt(11)
+#28051.46
+
+sum(data_long$reads)
+#466857
+
+data_long %>%
+  group_by(temperature) %>%
+  summarise(total_reads = sum(reads, na.rm = TRUE))
+
+#total reads per temp
+#ambient: 96395
+#frozen: 370462
+
+#sequencing depth
+#ambient
+96395/8
+
+#frozen
+370462/3
+
+data_long %>%
+  group_by(temperature) %>%
+  summarise(total_reads = sd(reads, na.rm = TRUE))
+#sd
+#ambient: 12694
+#frozen: 168401
+
+#se
+#ambient
+12694/sqrt(8)
+# 4488.007
+
+#frozen
+168401/sqrt(3)
+#97226.36
+
 # ----
 
 # ----
