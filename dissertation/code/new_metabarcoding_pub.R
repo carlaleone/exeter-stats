@@ -594,14 +594,31 @@ Accum.dur <- accumcomp(meta_wide, y=treatments_sac, factor='duration',
 accum.long.dur <- accumcomp.long(Accum.dur, ci=0.95, label.freq=5)
 View(Accum.dur)
 
+#old duration sac plot for when 1 and 2 were not overlapping
+#duration_sac_plot <- 
+ # ggplot(data = accum.long.dur, aes(x = Sites, y = Richness)) + 
+#  geom_ribbon(aes(ymin = LWR, ymax = UPR, fill = Grouping), alpha = 0.1, colour = NA) +
+ # geom_line(aes(colour = Grouping), size = 0.8) +
+ # scale_colour_manual(values = c("0" = "#ffb2fd", "1" = "#009f81", "2" = "#ff5aaf", "4" = "#8400cd", "8" = "#00fccf")) +  # line color
+ # scale_fill_manual(values = c("0" = "#ffb2fd", "1" = "#009f81", "2" = "#ff5aaf", "4" = "#8400cd", "8" = "#00fccf")) +    # ribbon fill
+ # labs(x = "Samples", y = "Species Richness", colour = "Duration", fill = "Duration") +
+#  theme_classic()
+
+
+#new sac plot using different line types to deal with week 1 and 2 overlapping
 duration_sac_plot <- 
   ggplot(data = accum.long.dur, aes(x = Sites, y = Richness)) + 
   geom_ribbon(aes(ymin = LWR, ymax = UPR, fill = Grouping), alpha = 0.1, colour = NA) +
-  geom_line(aes(colour = Grouping), size = 0.8) +
-  scale_colour_manual(values = c("0" = "#ffb2fd", "1" = "#009f81", "2" = "#ff5aaf", "4" = "#8400cd", "8" = "#00fccf")) +  # line color
-  scale_fill_manual(values = c("0" = "#ffb2fd", "1" = "#009f81", "2" = "#ff5aaf", "4" = "#8400cd", "8" = "#00fccf")) +    # ribbon fill
-  labs(x = "Samples", y = "Species Richness", colour = "Duration", fill = "Duration") +
+  geom_line(aes(colour = Grouping, linetype = Grouping), size = 0.8) +
+  scale_colour_manual(values = c("0" = "#ffb2fd", "1" = "#009f81", "2" = "#00fccf", "4" = "#8400cd", "8" = "#ff5aaf")) +
+  scale_fill_manual(values = c("0" = "#ffb2fd", "1" = "#009f81", "2" = "#00fccf", "4" = "#8400cd", "8" = "#ff5aaf")) +
+  scale_linetype_manual(values = c("0" = "dashed", "1" = "dashed", "2" = "solid", "4" = "dashed", "8" = "dashed")) +
+  labs(x = "Samples", y = "Species Richness", colour = "Duration", fill = "Duration", linetype = "Duration") +
+  guides(colour = guide_legend(title = "Duration"),
+         fill = guide_legend(title = "Duration"),
+         linetype = guide_legend(title = "Duration")) +
   theme_classic()
+
 
 duration_sac_plot
 
