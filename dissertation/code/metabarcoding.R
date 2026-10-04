@@ -8,8 +8,8 @@ library(pacman)
 pacman::p_load(stringr, tidyverse, readxl, readr, vegan, report, BiodiversityR, RColorBrewer, car, pheatmap, broom, patchwork)
 getwd()
 setwd("/Users/carlaleone/Desktop/Exeter/dissertation")
-metabarcoding_data <- read_csv("data/metabarcoding_results.csv") 
-View(metabarcoding_data)
+metabarcoding_data_old <- read_csv("data/metabarcoding_results.csv") 
+View(metabarcoding_data_old)
 #----
 
 #----

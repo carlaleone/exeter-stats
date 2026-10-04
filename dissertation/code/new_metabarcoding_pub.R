@@ -99,7 +99,8 @@ scatter_plot_reads<- ggplot(meta, aes(x = factor(duration), y = `Total read`, co
   )
 
 
-boxplot_reads + scatter_plot_reads
+
+scatter_plot_reads
 #----
 
 #----
@@ -270,12 +271,14 @@ richness_plot
 
 ### Create community data ----
 # remove duplicate fr01 pollachius pollachius
+
 full_meta <- full_meta %>%
   filter(!(`Sample ID` == "FR0_1" & Confidence == "LOW"))
 
 # Select only the necessary columns
 meta_long<- full_meta %>%
   select(`Sample ID`, `Species`, `Total read`)
+
 View(meta_long)
 
 # Then pivot the data to make it wide, so that each species is in its own column. 
@@ -575,6 +578,16 @@ a_hel_matrix_na[a_hel_matrix_na == 0] <- NA # record 0s as NAs
 a_hel_matrix_na<- t(a_hel_matrix_na)
 View(a_hel_matrix_na)
 
+italic_labels <- expression(italic("Scomber scombrus"),
+                            italic("Sardina pilchardus"),
+                            italic("Pollachius pollachius"),
+                            italic("Trachinus draco"),
+                            italic("Ammodytes personatus"),
+                            italic("Ammodytes marinus"),
+                            italic("Lophius piscatorius"),
+                            italic("Clupea harengus"),
+                            italic("Atherina boyeri"))
+
 p_a<- pheatmap(a_hel_matrix_na,
                cluster_rows = F,
                cluster_cols = F,
@@ -585,7 +598,10 @@ p_a<- pheatmap(a_hel_matrix_na,
                angle_col = 0,
                main = "Ambient",
                cellwidth = 30,    # width of each column
-               cellheight = 27)
+               cellheight = 27,
+               labels_row = italic_labels)
+
+p_a
 
 p_fr
 
@@ -594,17 +610,55 @@ p_fr
 #----
 
 ### SAC with accumcomp ----
-
 # make row names the first column for treatments, and make sure you have a column with read counts
 treatments_sac<- treatments %>%
   column_to_rownames(var = "Sample ID")
+
+
+# Method with Specaccum:
+dur_groups_full <- split(meta_wide, treatments_sac$duration)
+
+lapply(dur_groups_full, nrow)
+
+accum_list <- lapply(names(dur_groups_full), function(grp) {
+  sp <- specaccum(dur_groups_full[[grp]], method = "rarefaction")
+  ex <- predict(sp, newdata = 1:150)
+  data.frame(Sites = 1:150, Richness = ex, Grouping = grp)
+})
+
+accum_extrap <- bind_rows(accum_list)
+
+accum_extrap$Grouping <- factor(accum_extrap$Grouping, 
+                                levels = c("0", "1", "2", "4", "8"))
+
+
+duration_sac_plot1 <- 
+  ggplot(data = accum_extrap, aes(x = Sites, y = Richness)) + 
+  geom_line(aes(colour = Grouping, linetype = Grouping), linewidth = 0.8) +
+  scale_colour_manual(values = c("0" = "#ffb2fd", "1" = "#009f81", "2" = "#00fccf", "4" = "#8400cd", "8" = "#ff5aaf")) +
+  scale_linetype_manual(values = c("0" = "dashed", "1" = "dashed", "2" = "solid", "4" = "dashed", "8" = "dashed")) +
+  labs(x = "Samples", y = "Species Richness", colour = "Duration", fill = "Duration", linetype = "Duration") +
+  guides(colour = guide_legend(title = "Duration"),
+         fill = guide_legend(title = "Duration"),
+         linetype = guide_legend(title = "Duration")) +
+  theme_classic()
+
+duration_sac_plot1
+
+## Method with accumcomp (BiodiversityR)
+summary(accum_extrap$Richness)
+max(accum_extrap$Sites[!is.na(accum_extrap$Richness)])
 
 
 # For the duration treatment
 Accum.dur <- accumcomp(meta_wide, y=treatments_sac, factor='duration', 
                        method='exact', conditioned=FALSE, plotit=FALSE)
 
-accum.long.dur <- accumcomp.long(Accum.dur, ci=0.95, label.freq=5)
+accum.long.dur <- accumcomp.long(Accum.dur, ci=0.95, label.freq=5) 
+
+accum.long.dur$Grouping <- factor(accum.long.dur$Grouping, 
+                                  levels = c("0", "1", "2", "4", "8"))
+
 View(Accum.dur)
 
 #old duration sac plot for when 1 and 2 were not overlapping
@@ -718,8 +772,8 @@ richness_long$Richness[is.na(richness_long$Richness)] <- 0
 
 
 # plot chao vs observed for each temp over time.
-ggplot(richness_long, aes(x = duration, y = Richness, color = temperature, linetype = RichnessType)) +
-  geom_line(size = 0.7) +
+ggplot(richness_long, aes(x = duration, y = Richness, color = temperature, linetype = RichnessType, method = "loess" )) +
+  #geom_line(size = 0.7) +
   geom_point(size = 2) +
   # Add ribbons for Chao SE
   geom_ribbon(data = richness_long %>% filter(RichnessType == "chao"),
@@ -729,7 +783,7 @@ ggplot(richness_long, aes(x = duration, y = Richness, color = temperature, linet
   labs(x = "Duration (weeks)",
        y = "Species Richness", ) +
   theme_classic() +
-  scale_linetype_manual(values = c("dashed", "solid")) +
+ # scale_linetype_manual(values = c("dashed", "solid")) +
   scale_color_manual(values = c("#E69F00", "#0072B2")) +
   scale_fill_manual(values = c("#E69F00", "#0072B2")) +
   theme(text = element_text(size = 15),
