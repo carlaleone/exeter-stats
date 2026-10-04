@@ -448,6 +448,33 @@ duration.cca.plot<- ggplot(scores.df, aes(x = CCA1, y = CCA2, color = duration))
 
 duration.cca.plot
 
+## Using ellipses instead of hulls:
+duration.cca.plot.eli <- ggplot(scores.df, aes(x = CCA1, y = CCA2, color = duration)) +
+  geom_point(size = 4, alpha = 0.75) +
+  stat_ellipse(aes(fill = duration, group = duration), 
+               type = "t", linetype = 2, alpha = 0.2, 
+               geom = "polygon", color = NA) +
+  geom_point(data = species.scores, aes(x = CCA1, y = CCA2), 
+             shape = 17, color = "black", size = 4) +
+  labs(x = paste0("CCA1 (", var_exp[1], "%)"),
+       y = paste0("CCA2 (", var_exp[2], "%)"),
+       color = "Storage Duration (weeks)",
+       fill = "Storage Duration (weeks)") +
+  scale_colour_manual(values = c(
+    "0" = "#ffb2fd", "1" = "#009f81", "2" = "#ff5aaf", "4" = "#8400cd", "8" = "#00fccf")) +
+  scale_fill_manual(values = c(
+    "0" = "#ffb2fd", "1" = "#009f81", "2" = "#ff5aaf", "4" = "#8400cd", "8" = "#00fccf")) +
+  scale_x_continuous(breaks = seq(from = -3, to = 1, by = 0.5)) +
+  scale_y_continuous(breaks = seq(from = -2, to = 2, by = 0.5)) +
+  theme_classic() +
+  theme(axis.title = element_text(size = 18),
+        axis.text = element_text(size = 15),
+        legend.title = element_text(size = 16),
+        legend.text = element_text(size = 14),
+        legend.position = "bottom")
+
+duration.cca.plot.eli
+
 # TEMPERATURE CCA PLOT
 # ensure treatment labels are correct
 scores.df <- scores.df %>%
@@ -485,9 +512,36 @@ temp.cca.plot<- ggplot(scores.df, aes(x = CCA1, y = CCA2, color = temperature)) 
 
 temp.cca.plot
 
+temp.cca.plot.eli <- ggplot(scores.df, aes(x = CCA1, y = CCA2, color = temperature)) +
+  geom_point(size = 4, alpha = 0.75) +
+  stat_ellipse(aes(fill = temperature, group = temperature), 
+               type = "t", linetype = 2, alpha = 0.2, 
+               geom = "polygon", color = NA) +
+  geom_point(data = species.scores, aes(x = CCA1, y = CCA2), 
+             shape = 17, color = "black", size = 4) +
+  labs(x = paste0("CCA1 (", var_exp[1], "%)"),
+       y = paste0("CCA2 (", var_exp[2], "%)"),
+       color = "Storage Temperature",
+       fill = "Storage Temperature") +
+  scale_colour_manual(values = c("Ambient" = "#E69F00", "Frozen" = "#0072B2")) +
+  scale_fill_manual(values = c("Ambient" = "#E69F00", "Frozen" = "#0072B2")) +
+  scale_x_continuous(breaks = seq(from = -3, to = 1, by = 0.5)) +
+  scale_y_continuous(breaks = seq(from = -2, to = 2, by = 0.5)) +
+  theme_classic() +
+  theme(axis.title = element_text(size = 18),
+        axis.text = element_text(size = 15),
+        legend.title = element_text(size = 16),
+        legend.text = element_text(size = 14),
+        legend.position = "bottom")
+
+temp.cca.plot.eli
+
 # plot together in a panel
 duration.cca.plot + temp.cca.plot
 
+
+all_varpart<- varpart(meta_hel, ~ duration, ~ temperature, data = treatments_cca)
+plot(all_varpart)
 # ----
 
 # ----
